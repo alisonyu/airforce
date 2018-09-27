@@ -49,7 +49,7 @@ public class ClassScaner {
 			this.add("com.fasterxml");
 			// Logback
 			this.add("ch.qos");
-			//this.add("org.slf4j");
+			this.add("org.slf4j");
 			this.add("org.apache");
 			// Vert.x
 			this.add("io.vertx.core");

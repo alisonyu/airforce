@@ -28,9 +28,33 @@ class ParamAcceptor {
 	static Object accept(ParamMeta paramMeta, RoutingContext context){
 		final MultiMap queryParams = context.request().params();
 		final ParamType paramType = paramMeta.getParamType();
-		Object out;
+		Object in;
 		//如果参数被@BodyParam修饰,将其转为对象或者是JsonObject
 		if (paramType == ParamType.BODY_PARAM){
+			in = queryParams;
+		}
+		//如果参数不是@BodyParam，那么就根据不同类型获取相应的输入值
+		else{
+			in = getInputValue(paramMeta, context);
+			in = in == null ? paramMeta.getDefaultValue() : in;
+		}
+		return getValue(paramMeta,in);
+	}
+
+	/**
+	 * 根据参数元数据和输入值 来 输出结果值
+	 * @param paramMeta 参数元数据
+	 * @param in 输入值
+	 * @return 结果值
+	 */
+	static Object getValue(ParamMeta paramMeta, Object in){
+		Object out;
+		final ParamType paramType = paramMeta.getParamType();
+		if (paramType == ParamType.BODY_PARAM){
+			if (! (in instanceof MultiMap)){
+				throw new IllegalArgumentException("@BodyParam应该要接受MultiMap参数");
+			}
+			MultiMap queryParams = (MultiMap)in;
 			final Class<?> clazz = paramMeta.getType();
 			if (String.class.isAssignableFrom(clazz) || Number.class.isAssignableFrom(clazz)){
 				throw new IllegalArgumentException("被@BodyParam修饰的参数类型只能是JsonObject或者是Java Bean类型");
@@ -42,11 +66,11 @@ class ParamAcceptor {
 				out = castToJavaBean(clazz,queryParams);
 			}
 		}
-		//如果参数不是@BodyParam，那么就根据不同类型获取相应的输入值。然后根据参数的实际类型获取相应的输出值
 		else{
-			String in = getInputValue(paramMeta, context);
-			in = in == null ? paramMeta.getDefaultValue() : in;
-			out = getValue(paramMeta,in);
+			if (!(in instanceof String)){
+				throw new IllegalArgumentException("基础参数的输入值的类型应该为String，输入值为"+in.toString());
+			}
+			out = getBasicValue(paramMeta,(String)in);
 		}
 		return out;
 	}
@@ -106,7 +130,7 @@ class ParamAcceptor {
 										Case.widecard(()->String::valueOf));
 
 
-	private static Object getValue(ParamMeta paramMeta,String in){
+	private static Object getBasicValue(ParamMeta paramMeta, String in){
 		Class<?> type = paramMeta.getType();
 		return TYPE_MATCHER.match(type).apply(in);
 	}

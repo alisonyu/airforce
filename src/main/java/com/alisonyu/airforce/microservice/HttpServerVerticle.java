@@ -20,7 +20,6 @@ public class HttpServerVerticle extends AbstractVerticle {
 
 	@Override
 	public void start() throws Exception {
-
 		HttpServer server = vertx.createHttpServer();
 		server.requestHandler(router::accept).listen(port);
 	}

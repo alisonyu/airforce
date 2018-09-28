@@ -70,14 +70,19 @@ public abstract class RestVerticle extends AbstractVerticle{
 		try{
 			//1、构造参数
 			Object[] args = ArgsBuilder.build(meta,context);
+			Object out;
 			//2、调用对应方法
-			Object out = methodInvoke(meta,RestVerticle.this,args);
+			try{
+				out = methodInvoke(meta,RestVerticle.this,args);
+			}catch (Exception e){
+				out = ExceptionManager.handleException(meta,context,this,e);
+			}
 			//3、返回结果
 			doResponse(meta,out,context);
 		}
 		//4、处理异常
 		catch (Exception e){
-			ExceptionManager.handleException(meta,context,this,e);
+
 		}
 	}
 

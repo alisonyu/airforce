@@ -1,15 +1,14 @@
 package com.alisonyu.airforce.microservice.core.exception;
 
-import java.lang.annotation.*;
+import com.alisonyu.airforce.microservice.meta.RouteMeta;
+import io.vertx.ext.web.RoutingContext;
 
-/**
- * 标识该方法用于处理异常信息
- */
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface ExceptionHandler {
+import java.util.List;
 
+public interface ExceptionHandler {
 
+	List<Class<? extends Exception>> conform();
+
+	Object handle(RouteMeta routeMeta, RoutingContext context, Exception e);
 
 }

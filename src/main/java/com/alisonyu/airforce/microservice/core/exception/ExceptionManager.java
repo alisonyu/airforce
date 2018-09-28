@@ -14,8 +14,6 @@ import java.util.function.Function;
 
 /**
  * 处理RestVerticle发生的异常
- * 1、允许用户自定义异常处理器
- * 2、发生异常的时候，有一个默认的异常处理器进行处理，该处理器进行logger操作,并且返回500错误
  * @author yuzhiyi
  * @date 2018/9/14 14:27
  */
@@ -23,37 +21,41 @@ public class ExceptionManager {
 
 	private static Logger logger = LoggerFactory.getLogger(ExceptionManager.class);
 
-	private static Map<Class<? extends Exception>,Function<? extends Exception,Object>> exceptionHandlers = new ConcurrentHashMap<>();
+	private static Map<Class<? extends Exception>,ExceptionHandler> exceptionHandlers = new ConcurrentHashMap<>();
 
-
-	public static void handleException(RouteMeta meta, RoutingContext ctx,Object target,Exception e){
-		HttpServerResponse resp = ctx.response();
-		JsonObject json = new JsonObject()
-							.put("error","server meet some trouble!");
-		resp.setStatusCode(500);
-		resp.end(json.toString());
-		logger.error("exception message : {}", e.getMessage());
-		logger.error("exception cause : {}", e.getCause());
-		logger.error("exception suppressed : {}", Arrays.toString(e.getSuppressed()));
-		//异常输出
-		logger.error("exception toString and track space : {}", "\r\n" + e);
-		logger.error(errorTrackSpace(e));
-		logger.error("---------------------------------------------");
-		e.printStackTrace();
+	static{
+		//默认注册通用异常处理器
+		registerExceptionHandler(new DefaultExceptionHandler());
 	}
 
+	public static Object handleException(RouteMeta meta, RoutingContext ctx,Object target,Exception e){
+		//1、获取异常类型
+		Class<? extends Exception> type = e.getClass();
+		//2、根据类型获取对应的异常处理器
+		ExceptionHandler handler = getExceptionHandler(type);
+		//3、执行异常处理器并返回对象
+		return handler.handle(meta,ctx,e);
+	}
 
-
-
-	private static String errorTrackSpace(Exception e) {
-		StringBuffer sb = new StringBuffer();
-		if (e != null) {
-			for (StackTraceElement element : e.getStackTrace()) {
-				sb.append("\r\n\t").append(element);
-			}
+	static ExceptionHandler getExceptionHandler(Class<? extends Exception> type){
+		ExceptionHandler handler;
+		if (exceptionHandlers.containsKey(type)){
+			handler = exceptionHandlers.get(type);
+		}else{
+			handler = exceptionHandlers.get(Exception.class);
 		}
-		return sb.length() == 0 ? null : sb.toString();
+		return handler;
 	}
+
+
+	public static void registerExceptionHandler(ExceptionHandler exceptionHandler){
+		exceptionHandler.conform().forEach(type -> exceptionHandlers.put(type,exceptionHandler));
+	}
+
+
+
+
+
 
 
 

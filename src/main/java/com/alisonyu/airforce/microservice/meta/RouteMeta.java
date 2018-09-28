@@ -29,23 +29,41 @@ import java.util.stream.Collectors;
  */
 public class RouteMeta {
 
-	//挂载的路径
+	/**
+	 * 挂载的路径
+	 */
 	private String path;
-	//参数元数据
+	/**
+	 * 参数元数据
+ 	 */
 	private ParamMeta[] paramMetas;
-	//返回值
+	/**
+	* 返回值
+	 */
 	private Class<?> returnType;
-	//返回值content-type
+	/**
+	 * 返回值content-type
+	 */
 	private String produceType;
-	//Http方法,默认为GET
+	/**
+	 * Http方法,默认为GET
+	 */
 	private io.vertx.core.http.HttpMethod httpMethod = io.vertx.core.http.HttpMethod.GET;
-	//调用模式
+	/**
+	 * 调用模式
+	 */
 	private CallMode mode;
-	//被调用的对象
+	/**
+	 * 被调用的对象
+	 */
 	private Object proxy;
-	//被调用的方法
+	/**
+	 * 被调用的方法
+	 */
 	private Method proxyMethod;
-	//方法的名称
+	/**
+	 * 方法的名称
+	 */
 	private String methodName;
 
 

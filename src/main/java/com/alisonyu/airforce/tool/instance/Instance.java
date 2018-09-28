@@ -41,11 +41,7 @@ public class Instance {
 	@SuppressWarnings("unchecked")
 	public static <T> T enhanceInvoke(Object object, String methodName, Object... args) {
 		MethodAccess methodAccess = getMethodAccess(object);
-		try {
-			return (T) methodAccess.invoke(object, methodName, args);
-		} catch (Exception e) {
-			throw e;
-		}
+		return (T) methodAccess.invoke(object, methodName, args);
 	}
 
 	private static boolean containField(Class<?> clazz, String fieldName) {
@@ -72,7 +68,7 @@ public class Instance {
 			Object in = cast(value, type);
 			methodAccess.invoke(object, setter, in);
 		}
-		//如果没有这个方法，那么降级为使用JVM设置
+		//如果没有setter，那么降级为使用JVM设置
 		catch (IllegalArgumentException e) {
 			logger.warn(e.getMessage() + ",将降级使用JvmSet");
 			jvmSet(object, fieldName, value);

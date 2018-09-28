@@ -1,7 +1,7 @@
 package com.alisonyu.airforce.microservice;
 
 import com.alisonyu.airforce.constant.*;
-import com.alisonyu.airforce.microservice.core.ArgsBuilder;
+import com.alisonyu.airforce.microservice.core.param.ArgsBuilder;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionManager;
 import com.alisonyu.airforce.microservice.meta.RouteMeta;
 import com.alisonyu.airforce.tool.instance.Instance;

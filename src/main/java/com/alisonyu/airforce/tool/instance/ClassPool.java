@@ -3,6 +3,8 @@ package com.alisonyu.airforce.tool.instance;
 import com.esotericsoftware.reflectasm.FieldAccess;
 import com.esotericsoftware.reflectasm.MethodAccess;
 
+import java.lang.reflect.Field;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -13,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 interface ClassPool {
 
 	ConcurrentHashMap<String,Class<?>> classPool = new ConcurrentHashMap<>();
+
+	ConcurrentHashMap<Class<?>, Set<String>> fieldNamePool = new ConcurrentHashMap<>();
 
 	ConcurrentHashMap<Class<?>,MethodAccess> methodAccessPool = new ConcurrentHashMap<>();
 

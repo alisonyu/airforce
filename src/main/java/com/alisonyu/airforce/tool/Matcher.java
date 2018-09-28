@@ -16,6 +16,7 @@ public class Matcher<T,R> {
 
 
 	@SuppressWarnings("unchecked")
+	@SafeVarargs
 	public static <T,R>Matcher<T,R> of(Class<T> type,Case<T,R>case1 ,Case<T,R>... cases){
 		Matcher matcher = new Matcher();
 		matcher.type = type;

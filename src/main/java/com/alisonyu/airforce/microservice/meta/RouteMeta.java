@@ -7,6 +7,7 @@ import com.alisonyu.airforce.constant.Strings;
 import com.alisonyu.airforce.microservice.anno.BodyParam;
 import com.alisonyu.airforce.microservice.anno.SessionParam;
 import com.alisonyu.airforce.microservice.anno.Sync;
+import com.alisonyu.airforce.microservice.core.param.ParamMeta;
 import com.alisonyu.airforce.tool.*;
 import com.alisonyu.airforce.tool.instance.Anno;
 import com.alisonyu.airforce.tool.instance.Reflect;

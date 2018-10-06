@@ -14,8 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 interface ClassPool {
 
-	ConcurrentHashMap<String,Class<?>> classPool = new ConcurrentHashMap<>();
-
 	ConcurrentHashMap<Class<?>, Set<String>> fieldNamePool = new ConcurrentHashMap<>();
 
 	ConcurrentHashMap<Class<?>,MethodAccess> methodAccessPool = new ConcurrentHashMap<>();

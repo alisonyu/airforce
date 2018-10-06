@@ -4,6 +4,7 @@ import com.alisonyu.airforce.constant.*;
 import com.alisonyu.airforce.microservice.core.param.ArgsBuilder;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionManager;
 import com.alisonyu.airforce.microservice.meta.RouteMeta;
+import com.alisonyu.airforce.microservice.router.RouterMounter;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.*;
 import io.vertx.core.http.HttpServerResponse;
@@ -21,13 +22,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * RestVerticle用于进行Rest接口编写
+ * AbstractRestVerticle用于进行Rest接口编写
  * @author yuzhiyi
  * @date 2018/9/12 10:13
  */
-public abstract class RestVerticle extends AbstractVerticle{
+public abstract class AbstractRestVerticle extends AbstractVerticle implements RouterMounter {
 
-	private static Logger logger = LoggerFactory.getLogger(RestVerticle.class);
+	private static Logger logger = LoggerFactory.getLogger(AbstractRestVerticle.class);
 
 	private String rootPath;
 
@@ -39,8 +40,9 @@ public abstract class RestVerticle extends AbstractVerticle{
 	/**
 	 * 进行路由的挂载
 	 */
+	@Override
 	public void mount(Router router){
-		Class<? extends RestVerticle> clazz = this.getClass();
+		Class<? extends AbstractRestVerticle> clazz = this.getClass();
 		this.rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
 		//将在RestVerticle定义的方法转化为RouteMeta
 		List<RouteMeta> routeMetas = Arrays.stream(clazz.getDeclaredMethods())
@@ -73,7 +75,7 @@ public abstract class RestVerticle extends AbstractVerticle{
 			Object out;
 			//2、调用对应方法
 			try{
-				out = methodInvoke(meta,RestVerticle.this,args);
+				out = methodInvoke(meta, AbstractRestVerticle.this,args);
 			}catch (Exception e){
 				out = ExceptionManager.handleException(meta,context,this,e);
 			}
@@ -107,7 +109,7 @@ public abstract class RestVerticle extends AbstractVerticle{
 					//4、写入
 					resp.end(out);
 				}else{
-					ExceptionManager.handleException(meta,context,RestVerticle.this, (Exception) event.cause());
+					ExceptionManager.handleException(meta,context, AbstractRestVerticle.this, (Exception) event.cause());
 				}
 			});
 		}

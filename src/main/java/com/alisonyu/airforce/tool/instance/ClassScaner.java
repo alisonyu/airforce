@@ -54,6 +54,7 @@ public class ClassScaner {
 			// Vert.x
 			this.add("io.vertx.core");
 			this.add("io.vertx.spi");
+			this.add("io.vertx.ext.web");
 			// Asm
 			this.add("org.ow2");
 			this.add("org.objectweb");
@@ -72,7 +73,7 @@ public class ClassScaner {
 	};
 
 
-	 static Set<Class<?>> getClasses(){
+	 public static Set<Class<?>> getClasses(){
 		Set<String> packageDirs = getPackages();
 		//并行流扫描
 		packageDirs.forEach(ClassScaner :: getClassesInPackage);

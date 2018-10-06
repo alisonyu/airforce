@@ -28,9 +28,13 @@ public class DefaultExceptionHandler implements ExceptionHandler {
 
 	@Override
 	public Object handle(RouteMeta routeMeta, RoutingContext context, Exception e) {
+		//记录log
 		logger.error("{} occur error: {}",routeMeta.getPath(),e.getMessage());
+		//设置500返回码
 		context.response().setStatusCode(HttpExceptionCode.INTERNAL_SERVER_ERROR.value);
+		//打印堆栈信息来排除bug
 		e.printStackTrace();
+		//返回ErrorMessage对象
 		ErrorMessage message = new ErrorMessage();
 		message.setPath(routeMeta.getPath());
 		message.setMethod(routeMeta.getHttpMethod().name());

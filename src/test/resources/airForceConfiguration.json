@@ -1,6 +1,17 @@
 {
   "server":{
-    "port":9099
+    "port":9099,
+    "static":{
+      "path" : "/html/*",
+      "root" : "webroot",
+      "encoding" : "UTF-8",
+      "cache":{
+        "enable":true,
+        "maxAge":86400,
+        "cacheTimeout": 30000,
+        "maxCacheSize":10000
+      }
+    }
   },
   "cloud":{
     "service":{

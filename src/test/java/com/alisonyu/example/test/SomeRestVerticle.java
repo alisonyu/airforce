@@ -1,6 +1,6 @@
 package com.alisonyu.example.test;
 
-import com.alisonyu.airforce.microservice.RestVerticle;
+import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -10,7 +10,7 @@ import javax.ws.rs.Path;
  * @date 2018/9/14 16:05
  */
 @Path("some")
-public class SomeRestVerticle extends RestVerticle {
+public class SomeRestVerticle extends AbstractRestVerticle {
 
 	@Path("thread")
 	@GET

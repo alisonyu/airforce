@@ -2,20 +2,26 @@ package com.alisonyu.airforce;
 
 import com.alisonyu.airforce.cloud.config.ServiceConfig;
 import com.alisonyu.airforce.cloud.core.ServiceRecord;
+import com.alisonyu.airforce.common.Container;
+import com.alisonyu.airforce.common.ContainerFactory;
 import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.configuration.ServerConfig;
 import com.alisonyu.airforce.constant.Banner;
+import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 import com.alisonyu.airforce.microservice.HttpServerVerticle;
-import com.alisonyu.airforce.microservice.RestVerticle;
+import com.alisonyu.airforce.microservice.router.RouterManager;
+import com.alisonyu.airforce.microservice.router.StaticConfiguration;
+import com.alisonyu.airforce.microservice.router.StaticRouteMounter;
+import com.alisonyu.airforce.microservice.router.WebRouteMounter;
 import com.alisonyu.airforce.tool.Network;
 import com.alisonyu.airforce.tool.TimeMeter;
-import com.alisonyu.airforce.tool.instance.ScanedClass;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
@@ -32,20 +38,17 @@ public class AirForceApplication {
 
 	public static void run(Class clazz ,String... args){
 		showBanner();
-		//包扫描,并将类结果缓存
-		scanClasses();
 		//初始化Vertx
 		Vertx vertx = instanceVertx();
 		//初始化应用配置
 		initConfig(vertx,clazz,args);
 		//configuration router
-		Router router = initRouter(vertx);
+		RouterManager routerManager = initRouter(vertx);
 		//deploy all restVerticle
-		deployRestVerticle(vertx,router);
+		deployRestVerticle(vertx,routerManager);
 		//if all restVerticle deployed successfully! begin listen;
-		startHttpServer(vertx,router);
-		//if cloud is enabled,start service register and discovery
-		//startCloudApplication();
+		startHttpServer(vertx,routerManager.getRouter());
+
 	}
 
 	private static void showBanner(){
@@ -68,40 +71,37 @@ public class AirForceApplication {
 		}
 	}
 
-	private static void scanClasses(){
-		TimeMeter timeMeter = new TimeMeter();
-		timeMeter.start();
-		ScanedClass.scan();
-		logger.debug("类扫描使用了{}ms",timeMeter.end());
+	private static RouterManager initRouter(Vertx vertx){
+		RouterManager routerManager = new RouterManager(vertx);
+		//1、进行Web基本挂载
+		routerManager.doMount(new WebRouteMounter());
+		//2、进行静态路由的挂载
+		StaticConfiguration staticConfiguration = AirForceEnv.getConfig(StaticConfiguration.class);
+		routerManager.doMount(new StaticRouteMounter(staticConfiguration));
+		//3、todo 在Container中获取其他挂载对象进行挂载
+		return routerManager;
 	}
 
-	private static Router initRouter(Vertx vertx){
-		Router router = Router.router(vertx);
-		router.route().handler(CookieHandler.create());
-		router.route().handler(BodyHandler.create());
-		router.route().handler(ResponseContentTypeHandler.create());
-		return router;
-	}
-
-	private static void deployRestVerticle(Vertx vertx,Router router){
+	private static void deployRestVerticle(Vertx vertx,RouterManager routerManager){
 		//get all restVerticle class
-		Set<Class<?>> restVerticleClasses = ScanedClass.
-				getClasses(cls -> RestVerticle.class.isAssignableFrom(cls) && cls != RestVerticle.class);
+		Container container = ContainerFactory.getContainer();
+		Set<Class<? extends AbstractRestVerticle>> restVerticleClasses = container.getClassesImpl(AbstractRestVerticle.class);
 		CountDownLatch latch = new CountDownLatch(restVerticleClasses.size());
-		//deploy RestVerticle
+		//deploy AbstractRestVerticle
 		restVerticleClasses
 				.forEach(c->{
 					try {
-						RestVerticle verticle = (RestVerticle) c.newInstance();
+						AbstractRestVerticle verticle = c.newInstance();
 						vertx.deployVerticle(verticle,rs->{
 							if (rs.succeeded()){
-								//部署成功就开始挂载路由
-								verticle.mount(router);
-								latch.countDown();
+								routerManager.doMount(verticle);
 							}
 						});
 					} catch (InstantiationException | IllegalAccessException e) {
+						logger.error("部署{}出现异常",c.getName());
 						e.printStackTrace();
+					}finally {
+						latch.countDown();
 					}
 				});
 		//if all restVerticle deployed successfully! begin listen;

@@ -1,6 +1,6 @@
 package com.alisonyu.example.test;
 
-import com.alisonyu.airforce.microservice.RestVerticle;
+import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 import com.alisonyu.airforce.microservice.anno.BodyParam;
 import com.alisonyu.airforce.microservice.anno.Sync;
 import io.vertx.core.Future;
@@ -8,9 +8,7 @@ import io.vertx.core.json.JsonObject;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,7 +16,7 @@ import java.util.Map;
  * @date 2018/9/12 10:17
  */
 @Path("hello")
-public class HelloRestVerticle extends RestVerticle{
+public class HelloRestVerticle extends AbstractRestVerticle {
 
 	private int counter = 1;
 

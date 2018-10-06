@@ -5,6 +5,8 @@ import com.alisonyu.airforce.tool.Case;
 import com.alisonyu.airforce.tool.Matcher;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
@@ -27,17 +29,27 @@ class ParamAcceptor {
 	static Object accept(ParamMeta paramMeta, RoutingContext context){
 		final MultiMap queryParams = context.request().params();
 		final ParamType paramType = paramMeta.getParamType();
-		Object in;
-		//如果参数被@BodyParam修饰,将其转为对象或者是JsonObject
-		if (paramType == ParamType.BODY_PARAM){
-			in = queryParams;
+		final Class<?> paramJavaType = paramMeta.getType();
+		Object out;
+		//判断是否是需要注入的对象
+		if (isInjectObject(paramJavaType)){
+			out = injectObject(paramJavaType,context);
 		}
-		//如果参数不是@BodyParam，那么就根据不同类型获取相应的输入值
+		//否则从参数中取，然后转化成对应的类型
 		else{
-			in = getInputValue(paramMeta, context);
-			in = in == null ? paramMeta.getDefaultValue() : in;
+			Object in;
+			//如果参数被@BodyParam修饰,将其转为对象或者是JsonObject
+			if (paramType == ParamType.BODY_PARAM){
+				in = queryParams;
+			}
+			//如果参数不是@BodyParam，那么就根据不同类型获取相应的输入值
+			else{
+				in = getInputValue(paramMeta, context);
+				in = in == null ? paramMeta.getDefaultValue() : in;
+			}
+			out = getValue(paramMeta,in);
 		}
-		return getValue(paramMeta,in);
+		return out;
 	}
 
 	/**
@@ -143,5 +155,41 @@ class ParamAcceptor {
 		Class<?> type = paramMeta.getType();
 		return TYPE_MATCHER.match(type).apply(in);
 	}
+
+
+	private static final Class<?>[] INJECT_TYPE = {RoutingContext.class, HttpServerRequest.class, HttpServerResponse.class,Session.class};
+	private static boolean isInjectObject(Class<?> clazz){
+		boolean out = false;
+		for (Class<?> type: INJECT_TYPE){
+			if (type == clazz){
+				out = true;
+				break;
+			}
+		}
+		return out;
+	}
+
+
+	private static Object injectObject(Class<?> clazz,RoutingContext context){
+		Object out;
+		if (clazz == RoutingContext.class){
+			out = context;
+		}
+		else if (clazz == HttpServerRequest.class){
+			out = context.request();
+		}
+		else if (clazz == HttpServerResponse.class){
+			out = context.response();
+		}
+		else if (clazz == Session.class){
+			out = context.session();
+		}
+		else{
+			throw new IllegalArgumentException(clazz.getName() + "不能自动注入");
+		}
+		return out;
+	}
+
+
 
 }

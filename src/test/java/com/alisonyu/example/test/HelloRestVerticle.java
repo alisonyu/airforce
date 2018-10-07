@@ -98,7 +98,6 @@ public class HelloRestVerticle extends AbstractRestVerticle {
 		person.setAge(66);
 		person.setName("arr");
 		Person[] arr;
-
 		return new Person[]{person,person};
 	}
 

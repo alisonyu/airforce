@@ -106,8 +106,8 @@ public class RouteMeta {
 			Annotation[] annos = paramAnnos[idx];
 			List<Class<? extends Annotation>> annoTypes = Arrays.stream(annos).map(Annotation::annotationType).collect(Collectors.toList());
 			Parameter parameter = parameters[idx];
-			String name = parameter.getName();
-			String defaultValue = null;
+			String name;
+			String defaultValue;
 
 			//确定ParamType
 			ParamType paramType = Functions.matchAny(annoTypes,ParamType.QUERY_PARAM,

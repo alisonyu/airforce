@@ -4,9 +4,14 @@ import com.alisonyu.airforce.constant.*;
 import com.alisonyu.airforce.microservice.core.param.ArgsBuilder;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionManager;
 import com.alisonyu.airforce.microservice.meta.RouteMeta;
+import com.alisonyu.airforce.microservice.router.DispatcherRouter;
 import com.alisonyu.airforce.microservice.router.RouterMounter;
+import com.alisonyu.airforce.microservice.router.UnsafeLocalMessageCodec;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.*;
+import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -37,6 +42,12 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 		super.start();
 	}
 
+	@Override
+	public void init(Vertx vertx, Context context) {
+		super.init(vertx, context);
+		mountEventBus();
+	}
+
 	/**
 	 * 进行路由的挂载
 	 */
@@ -45,11 +56,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 		Class<? extends AbstractRestVerticle> clazz = this.getClass();
 		this.rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
 		//将在RestVerticle定义的方法转化为RouteMeta
-		List<RouteMeta> routeMetas = Arrays.stream(clazz.getDeclaredMethods())
-				.filter(m->m.isAnnotationPresent(Path.class))
-				.map(m-> new RouteMeta(rootPath,m))
-				.collect(Collectors.toList());
-
+		List<RouteMeta> routeMetas = getRouteMetas(clazz,rootPath);
 		//debug routeMeta
 		getVertx().runOnContext((e)->routeMetas.forEach(routeMeta -> logger.info(routeMeta.toString())));
 		//绑定路由
@@ -66,6 +73,74 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 						},false,null);
 					}
 		}));
+	}
+
+
+	public static void mountRouter(Class<? extends AbstractRestVerticle> clazz,Router router,EventBus eventBus){
+		String rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
+		//将在RestVerticle定义的方法转化为RouteMeta
+		List<RouteMeta> routeMetas = getRouteMetas(clazz,rootPath);
+		//debug routeMeta
+		routeMetas.forEach(routeMeta ->  logger.info(routeMeta.toString()));
+		//绑定路由,派发到EventBus中执行
+		routeMetas.forEach(routeMeta -> router.route(routeMeta.getHttpMethod(),routeMeta.getPath())
+				.handler(ctx-> dispatchToEventBus(eventBus,routeMeta,ctx)));
+	}
+
+
+	/**
+	 * 使用EventBus作为逻辑的分发
+	 */
+	public void mountEventBus(){
+		Class<? extends AbstractRestVerticle> clazz = this.getClass();
+		this.rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
+		//将在RestVerticle定义的方法转化为RouteMeta
+		List<RouteMeta> routeMetas = getRouteMetas(clazz,rootPath);
+		EventBus eventBus = getVertx().eventBus();
+		routeMetas.forEach(routeMeta -> {
+			String url = DispatcherRouter.getDispathcerAddress(routeMeta.getHttpMethod(),routeMeta.getPath());
+			eventBus.<RoutingContext>localConsumer(url)
+					.handler(event -> {
+						RoutingContext ctx = event.body();
+						if (routeMeta.getMode() == CallMode.ASYNC){
+							runOnContext(routeMeta,ctx);
+						}else{
+							runOnWorker(routeMeta,ctx);
+						}
+					});
+		});
+	}
+
+	private static final DeliveryOptions DELIVERY_OPTIONS = new DeliveryOptions().setCodecName(UnsafeLocalMessageCodec.class.getName());
+	private static void dispatchToEventBus(EventBus eventBus,RouteMeta routeMeta,RoutingContext context){
+		String url = DispatcherRouter.getDispathcerAddress(routeMeta.getHttpMethod(),routeMeta.getPath());
+		eventBus.send(url,context,DELIVERY_OPTIONS);
+	}
+
+	private void runOnContext(RouteMeta routeMeta,RoutingContext ctx){
+		getVertx().runOnContext(e -> attack(routeMeta,ctx));
+	}
+
+	private void runOnWorker(RouteMeta routeMeta,RoutingContext ctx){
+		getVertx().executeBlocking(f->{
+			attack(routeMeta,ctx);
+			f.complete();
+		},false,null);
+	}
+
+
+	private static List<RouteMeta> getRouteMetas(Class<? extends AbstractRestVerticle> clazz,String rootPath){
+		return Arrays.stream(clazz.getDeclaredMethods())
+				.filter(m->m.isAnnotationPresent(Path.class))
+				.map(m-> new RouteMeta(rootPath,m))
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * 覆盖该方法可以自定义部署Option
+	 */
+	public DeploymentOptions getDeployOption(){
+		return new DeploymentOptions();
 	}
 
 	private void attack(RouteMeta meta,RoutingContext context){

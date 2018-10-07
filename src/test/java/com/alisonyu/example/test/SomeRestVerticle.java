@@ -1,6 +1,7 @@
 package com.alisonyu.example.test;
 
 import com.alisonyu.airforce.microservice.AbstractRestVerticle;
+import io.vertx.core.DeploymentOptions;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -18,4 +19,10 @@ public class SomeRestVerticle extends AbstractRestVerticle {
 		return Thread.currentThread().getName();
 	}
 
+	@Override
+	public DeploymentOptions getDeployOption() {
+		DeploymentOptions deploymentOptions = new DeploymentOptions();
+		deploymentOptions.setInstances(4);
+		return deploymentOptions;
+	}
 }

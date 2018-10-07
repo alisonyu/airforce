@@ -10,18 +10,11 @@ import com.alisonyu.airforce.configuration.ServerConfig;
 import com.alisonyu.airforce.constant.Banner;
 import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 import com.alisonyu.airforce.microservice.HttpServerVerticle;
-import com.alisonyu.airforce.microservice.router.RouterManager;
-import com.alisonyu.airforce.microservice.router.StaticConfiguration;
-import com.alisonyu.airforce.microservice.router.StaticRouteMounter;
-import com.alisonyu.airforce.microservice.router.WebRouteMounter;
+import com.alisonyu.airforce.microservice.router.*;
 import com.alisonyu.airforce.tool.Network;
 import com.alisonyu.airforce.tool.TimeMeter;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.CookieHandler;
-import io.vertx.ext.web.handler.ResponseContentTypeHandler;
-import io.vertx.ext.web.handler.StaticHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
@@ -83,6 +76,7 @@ public class AirForceApplication {
 	}
 
 	private static void deployRestVerticle(Vertx vertx,RouterManager routerManager){
+		vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
 		//get all restVerticle class
 		Container container = ContainerFactory.getContainer();
 		Set<Class<? extends AbstractRestVerticle>> restVerticleClasses = container.getClassesImpl(AbstractRestVerticle.class);
@@ -90,11 +84,11 @@ public class AirForceApplication {
 		//deploy AbstractRestVerticle
 		restVerticleClasses
 				.forEach(c->{
+					AbstractRestVerticle.mountRouter(c,routerManager.getRouter(),vertx.eventBus());
 					try {
 						AbstractRestVerticle verticle = c.newInstance();
-						vertx.deployVerticle(verticle,rs->{
+						vertx.deployVerticle(verticle.getClass(),verticle.getDeployOption(),rs->{
 							if (rs.succeeded()){
-								routerManager.doMount(verticle);
 							}
 						});
 					} catch (InstantiationException | IllegalAccessException e) {

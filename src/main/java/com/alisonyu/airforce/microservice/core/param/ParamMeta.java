@@ -4,6 +4,7 @@ import com.alisonyu.airforce.constant.ParamType;
 import com.alisonyu.airforce.tool.Case;
 import com.alisonyu.airforce.tool.Functions;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -76,5 +77,21 @@ public class ParamMeta {
 				", paramType=" + paramType +
 				", defaultValue=" + defaultValue +
 				'}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ParamMeta paramMeta = (ParamMeta) o;
+		return Objects.equals(name, paramMeta.name) &&
+				Objects.equals(type, paramMeta.type) &&
+				paramType == paramMeta.paramType &&
+				Objects.equals(defaultValue, paramMeta.defaultValue);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, type, paramType, defaultValue);
 	}
 }

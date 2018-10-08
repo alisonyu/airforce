@@ -4,6 +4,8 @@ import com.alisonyu.airforce.cloud.config.ServiceConfig;
 import com.alisonyu.airforce.cloud.core.ServiceRecord;
 import com.alisonyu.airforce.common.Container;
 import com.alisonyu.airforce.common.ContainerFactory;
+import com.alisonyu.airforce.common.SpringAirForceContainer;
+import com.alisonyu.airforce.common.SpringConfiguration;
 import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.configuration.ServerConfig;
@@ -13,6 +15,7 @@ import com.alisonyu.airforce.microservice.HttpServerVerticle;
 import com.alisonyu.airforce.microservice.router.*;
 import com.alisonyu.airforce.tool.Network;
 import com.alisonyu.airforce.tool.TimeMeter;
+import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import org.slf4j.Logger;
@@ -35,6 +38,8 @@ public class AirForceApplication {
 		Vertx vertx = instanceVertx();
 		//初始化应用配置
 		initConfig(vertx,clazz,args);
+		//初始化容器
+		Container container = initContainer(vertx);
 		//configuration router
 		RouterManager routerManager = initRouter(vertx);
 		//deploy all restVerticle
@@ -58,10 +63,22 @@ public class AirForceApplication {
 		TimeMeter timeMeter = new TimeMeter();
 		timeMeter.start();
 		try{
-			return Vertx.vertx();
+			//1、实例化Vertx
+			Vertx vertx = Vertx.vertx();
+			//2、对EventBus注册Codec
+			vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
+			return vertx;
 		}finally {
 			logger.debug("实例化Vertx使用了{}ms",timeMeter.end());
 		}
+	}
+
+	private static Container initContainer(Vertx vertx){
+		SpringConfiguration configuration = AirForceEnv.getConfig(SpringConfiguration.class);
+		if (configuration.isEnable()){
+			ContainerFactory.registerContainer(new SpringAirForceContainer(vertx,configuration));
+		}
+		return ContainerFactory.getContainer();
 	}
 
 	private static RouterManager initRouter(Vertx vertx){
@@ -76,7 +93,6 @@ public class AirForceApplication {
 	}
 
 	private static void deployRestVerticle(Vertx vertx,RouterManager routerManager){
-		vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
 		//get all restVerticle class
 		Container container = ContainerFactory.getContainer();
 		Set<Class<? extends AbstractRestVerticle>> restVerticleClasses = container.getClassesImpl(AbstractRestVerticle.class);
@@ -87,7 +103,11 @@ public class AirForceApplication {
 					AbstractRestVerticle.mountRouter(c,routerManager.getRouter(),vertx.eventBus());
 					try {
 						AbstractRestVerticle verticle = c.newInstance();
-						vertx.deployVerticle(verticle.getClass(),verticle.getDeployOption(),rs->{
+						vertx.deployVerticle(()->{
+							AbstractRestVerticle v = Instance.instance(c);
+							container.injectObject(v);
+							return v;
+						},verticle.getDeployOption(),rs->{
 							if (rs.succeeded()){
 							}
 						});

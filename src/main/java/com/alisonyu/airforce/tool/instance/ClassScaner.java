@@ -69,6 +69,7 @@ public class ClassScaner {
 			// Hamcrest
 			this.add("org.hamcrest");
 			this.add("com.alisonyu.airforce");
+			this.add("org.springframework");
 		}
 	};
 
@@ -77,7 +78,7 @@ public class ClassScaner {
 		Set<String> packageDirs = getPackages();
 		//并行流扫描
 		packageDirs.forEach(ClassScaner :: getClassesInPackage);
-		classes.stream().map(Class::getName).forEach(logger::debug);
+		//classes.stream().map(Class::getName).forEach(logger::debug);
 		return classes;
 	}
 
@@ -204,6 +205,7 @@ public class ClassScaner {
 		}
 		//add current classpath
 		packageDirs.add(Strings.DOT);
+		//packageDirs.forEach(logger::debug);
 		return packageDirs;
 	}
 

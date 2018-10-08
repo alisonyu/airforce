@@ -1,6 +1,12 @@
 {
   "server":{
     "port":9099,
+
+    "spring":{
+      "enable":true,
+      "configuration":"com.alisonyu.example.test.SpringConfiguration"
+    },
+
     "static":{
       "path" : "/html/*",
       "root" : "webroot",

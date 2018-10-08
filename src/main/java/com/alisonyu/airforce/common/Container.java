@@ -13,6 +13,7 @@ import java.util.function.Predicate;
  */
 public interface Container {
 
+	Object injectObject(Object o);
 
 	Set<Class<?>> getClasses();
 

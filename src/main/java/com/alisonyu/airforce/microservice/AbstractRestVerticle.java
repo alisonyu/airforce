@@ -31,11 +31,9 @@ import java.util.stream.Collectors;
  * @author yuzhiyi
  * @date 2018/9/12 10:13
  */
-public abstract class AbstractRestVerticle extends AbstractVerticle implements RouterMounter {
+public abstract class AbstractRestVerticle extends AbstractVerticle {
 
 	private static Logger logger = LoggerFactory.getLogger(AbstractRestVerticle.class);
-
-	private String rootPath;
 
 	@Override
 	public void start() throws Exception {
@@ -49,33 +47,11 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 	}
 
 	/**
-	 * 进行路由的挂载
+	 * 注册路由
+	 * @param clazz
+	 * @param router
+	 * @param eventBus
 	 */
-	@Override
-	public void mount(Router router){
-		Class<? extends AbstractRestVerticle> clazz = this.getClass();
-		this.rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
-		//将在RestVerticle定义的方法转化为RouteMeta
-		List<RouteMeta> routeMetas = getRouteMetas(clazz,rootPath);
-		//debug routeMeta
-		getVertx().runOnContext((e)->routeMetas.forEach(routeMeta -> logger.info(routeMeta.toString())));
-		//绑定路由
-		routeMetas.forEach(routeMeta -> router.route(routeMeta.getHttpMethod(),routeMeta.getPath())
-				.handler(ctx-> {
-					//根据不同模式分发事件到不同线程中执行
-					//todo 处理异常
-					if (routeMeta.getMode() == CallMode.ASYNC){
-						getVertx().runOnContext(e-> attack(routeMeta,ctx));
-					}else{
-						getVertx().executeBlocking(f->{
-							attack(routeMeta,ctx);
-							f.complete();
-						},false,null);
-					}
-		}));
-	}
-
-
 	public static void mountRouter(Class<? extends AbstractRestVerticle> clazz,Router router,EventBus eventBus){
 		String rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
 		//将在RestVerticle定义的方法转化为RouteMeta
@@ -91,11 +67,11 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 	/**
 	 * 使用EventBus作为逻辑的分发
 	 */
-	public void mountEventBus(){
-		Class<? extends AbstractRestVerticle> clazz = this.getClass();
-		this.rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
+	private void mountEventBus(){
+		final Class<? extends AbstractRestVerticle> clazz = this.getClass();
+		final String rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH;
 		//将在RestVerticle定义的方法转化为RouteMeta
-		List<RouteMeta> routeMetas = getRouteMetas(clazz,rootPath);
+		List<RouteMeta> routeMetas = getRouteMetas(clazz, rootPath);
 		EventBus eventBus = getVertx().eventBus();
 		routeMetas.forEach(routeMeta -> {
 			String url = DispatcherRouter.getDispathcerAddress(routeMeta.getHttpMethod(),routeMeta.getPath());
@@ -152,6 +128,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 			try{
 				out = methodInvoke(meta, AbstractRestVerticle.this,args);
 			}catch (Exception e){
+				e.printStackTrace();
 				out = ExceptionManager.handleException(meta,context,this,e);
 			}
 			//3、返回结果
@@ -159,7 +136,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle implements R
 		}
 		//4、处理异常
 		catch (Exception e){
-
+			logger.error(e.getMessage(),e);
 		}
 	}
 

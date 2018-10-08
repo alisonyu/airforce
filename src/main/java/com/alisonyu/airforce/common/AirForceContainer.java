@@ -27,7 +27,18 @@ public class AirForceContainer implements Container{
 			Set<Class<?>> classes = ClassScaner.getClasses();
 			clazzPool = new ConcurrentHashSet<>();
 			clazzPool.addAll(classes);
+			this.inited.set(true);
 		}
+	}
+
+	/**
+	 * 默认的容器没有依赖注入
+	 * @param o
+	 * @return
+	 */
+	@Override
+	public Object injectObject(Object o) {
+		return o;
 	}
 
 	@Override

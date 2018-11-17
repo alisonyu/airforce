@@ -15,6 +15,4 @@ public class ServerBootstrap {
 		AirForceApplication.run(ServerBootstrap.class,args);
 	}
 
-
-
 }

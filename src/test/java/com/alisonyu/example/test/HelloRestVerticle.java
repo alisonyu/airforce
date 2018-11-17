@@ -3,9 +3,13 @@ package com.alisonyu.example.test;
 import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 import com.alisonyu.airforce.microservice.anno.BodyParam;
 import com.alisonyu.airforce.microservice.anno.Sync;
+import io.reactivex.Flowable;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import java.util.HashMap;
@@ -20,6 +24,12 @@ public class HelloRestVerticle extends AbstractRestVerticle {
 
 	private int counter = 1;
 
+	Logger logger = LoggerFactory.getLogger(HelloRestVerticle.class);
+
+	@PostConstruct
+	public void post(){
+        logger.info("hahahaha");
+    }
 
 	//注意，这样是线程安全的
 	@GET
@@ -56,13 +66,23 @@ public class HelloRestVerticle extends AbstractRestVerticle {
 	}
 
 
-	@POST
+	@GET
 	@Sync
 	@Path("blocking")
 	public String blocking() throws InterruptedException {
 		Thread.sleep(2000);
-		return "hello world";
+		return "hello world "+Thread.currentThread().getName();
 	}
+
+	@GET
+    @Path("flowable")
+	public Flowable<JsonObject> flowable(){
+	    JsonObject jsonObject = new JsonObject();
+	    jsonObject.put("name","alisonyu");
+	    jsonObject.put("age",20);
+	    return Flowable.just(jsonObject);
+    }
+
 
 	@Path("error")
 	@GET

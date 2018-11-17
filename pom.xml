@@ -30,6 +30,12 @@
             <version>${vertx.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-rx-java2</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.apache.curator</groupId>

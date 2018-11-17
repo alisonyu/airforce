@@ -12,12 +12,16 @@ import com.alisonyu.airforce.configuration.ServerConfig;
 import com.alisonyu.airforce.constant.Banner;
 import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 import com.alisonyu.airforce.microservice.HttpServerVerticle;
+import com.alisonyu.airforce.microservice.ext.HtmlTemplateEngine;
 import com.alisonyu.airforce.microservice.router.*;
+import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.Network;
 import com.alisonyu.airforce.tool.TimeMeter;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.impl.TemplateHandlerImpl;
+import io.vertx.reactivex.RxHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
@@ -67,6 +71,8 @@ public class AirForceApplication {
 			Vertx vertx = Vertx.vertx();
 			//2、对EventBus注册Codec
 			vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
+			//3、对AsyncHelper注册Scheduler
+			AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertx,false));
 			return vertx;
 		}finally {
 			logger.debug("实例化Vertx使用了{}ms",timeMeter.end());
@@ -88,7 +94,12 @@ public class AirForceApplication {
 		//2、进行静态路由的挂载
 		StaticConfiguration staticConfiguration = AirForceEnv.getConfig(StaticConfiguration.class);
 		routerManager.doMount(new StaticRouteMounter(staticConfiguration));
-		//3、todo 在Container中获取其他挂载对象进行挂载
+		//3、模板文件进行挂载
+		routerManager.getRouter()
+				.routeWithRegex(".+\\.html")
+				.order(Integer.MAX_VALUE)
+				.blockingHandler(new TemplateHandlerImpl(new HtmlTemplateEngine(),"template","text/html"));
+		//4、todo 在Container中获取其他挂载对象进行挂载
 		return routerManager;
 	}
 

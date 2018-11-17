@@ -19,12 +19,14 @@
       "register":true,
       "fetch-registry":false
     },
-    "zookeeper":{
-      "namespace":"airForce",
-      "servers":["127.0.0.1:2181"],
+    "zookeeper": {
+      "namespace": "airForce",
+      "servers": [
+        "127.0.0.1:2181"
+      ],
       "sessionTimeoutMs": 60000,
-      "connectionTimeoutMs":15000,
-      "retry":{
+      "connectionTimeoutMs": 15000,
+      "retry": {
         "intervalMs": 2000
       }
     }

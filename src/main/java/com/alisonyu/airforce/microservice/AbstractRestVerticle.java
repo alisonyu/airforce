@@ -1,6 +1,7 @@
 package com.alisonyu.airforce.microservice;
 
 import com.alisonyu.airforce.constant.*;
+import com.alisonyu.airforce.microservice.core.exception.ExceptionHandler;
 import com.alisonyu.airforce.microservice.core.param.ArgsBuilder;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionManager;
 import com.alisonyu.airforce.microservice.meta.RouteMeta;
@@ -8,6 +9,9 @@ import com.alisonyu.airforce.microservice.router.DispatcherRouter;
 import com.alisonyu.airforce.microservice.router.RouterMounter;
 import com.alisonyu.airforce.microservice.router.UnsafeLocalMessageCodec;
 import com.alisonyu.airforce.tool.instance.Instance;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.Scheduler;
 import io.vertx.core.*;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
@@ -17,6 +21,10 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.reactivex.CompletableHelper;
+import io.vertx.reactivex.ObservableHelper;
+import io.vertx.reactivex.RxHelper;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +42,8 @@ import java.util.stream.Collectors;
 public abstract class AbstractRestVerticle extends AbstractVerticle {
 
 	private static Logger logger = LoggerFactory.getLogger(AbstractRestVerticle.class);
+    private Scheduler vertxScheduler;
+    private Scheduler blockingScheduler;
 
 	@Override
 	public void start() throws Exception {
@@ -44,6 +54,8 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 	public void init(Vertx vertx, Context context) {
 		super.init(vertx, context);
 		mountEventBus();
+		vertxScheduler = RxHelper.scheduler(vertx);
+		blockingScheduler = RxHelper.blockingScheduler(vertx,false);
 	}
 
 	/**
@@ -78,11 +90,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 			eventBus.<RoutingContext>localConsumer(url)
 					.handler(event -> {
 						RoutingContext ctx = event.body();
-						if (routeMeta.getMode() == CallMode.ASYNC){
-							runOnContext(routeMeta,ctx);
-						}else{
-							runOnWorker(routeMeta,ctx);
-						}
+                        rxRun(ctx,routeMeta);
 					});
 		});
 	}
@@ -93,16 +101,57 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 		eventBus.send(url,context,DELIVERY_OPTIONS);
 	}
 
-	private void runOnContext(RouteMeta routeMeta,RoutingContext ctx){
-		getVertx().runOnContext(e -> attack(routeMeta,ctx));
-	}
 
-	private void runOnWorker(RouteMeta routeMeta,RoutingContext ctx){
-		getVertx().executeBlocking(f->{
-			attack(routeMeta,ctx);
-			f.complete();
-		},false,null);
-	}
+	private void rxRun(RoutingContext ctx,RouteMeta routeMeta){
+        Scheduler scheduler = routeMeta.getMode() == CallMode.ASYNC ? vertxScheduler : blockingScheduler;
+	    //解析参数，并将参数作为入口
+        Flowable.just(ArgsBuilder.build(routeMeta,ctx))
+                //方法调用
+                .map(args -> methodInvoke(routeMeta,AbstractRestVerticle.this,args))
+                //如果异常，进入异常处理器，返回异常结果
+                .onErrorReturn(e -> ExceptionManager.handleException(routeMeta,ctx,this,(Exception) e))
+                //判断结果类型，生成结果流
+                .flatMap(res -> {
+                    Publisher<Object> publisher = null;
+                    if (res instanceof Publisher){
+                        publisher = (Publisher<Object>) res;
+                    }
+                    else if (res instanceof Future){
+                        publisher = Flowable.fromPublisher(source->{
+                            Future<Object> future = (Future<Object>) res;
+                            future.setHandler(asyncResult -> {
+                                Object realResult = null;
+                                if (asyncResult.succeeded()){
+                                    realResult = asyncResult.result();
+                                }else{
+                                    realResult = ExceptionManager.handleException(routeMeta,ctx,this,(Exception)asyncResult.cause());
+                                }
+                                source.onNext(realResult);
+                                source.onComplete();
+                            });
+                        });
+                    }else{
+                        publisher = Flowable.just(res);
+                    }
+                    return publisher;
+                })
+                //将结果根据ProduceType序列化
+                .map(in -> serialize(in,routeMeta.getProduceType()))
+                //以上结果根据异步或者同步在不同的模式下选择不同的调度器
+                .subscribeOn(scheduler)
+                //获得结果之后我们切换Worker线程
+                .observeOn(blockingScheduler)
+                //将结果写入到http response中
+                .subscribe(content->{
+                    HttpServerResponse resp = ctx.response();
+                    //1、设置Content-type
+                    String produceType = routeMeta.getProduceType();
+                    resp.putHeader(Headers.CONTENT_TYPE,produceType);
+                    //2、作出响应
+                    resp.end(content);
+                });
+    }
+
 
 
 	private static List<RouteMeta> getRouteMetas(Class<? extends AbstractRestVerticle> clazz,String rootPath){
@@ -119,26 +168,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 		return new DeploymentOptions();
 	}
 
-	private void attack(RouteMeta meta,RoutingContext context){
-		try{
-			//1、构造参数
-			Object[] args = ArgsBuilder.build(meta,context);
-			Object out;
-			//2、调用对应方法
-			try{
-				out = methodInvoke(meta, AbstractRestVerticle.this,args);
-			}catch (Exception e){
-				e.printStackTrace();
-				out = ExceptionManager.handleException(meta,context,this,e);
-			}
-			//3、返回结果
-			doResponse(meta,out,context);
-		}
-		//4、处理异常
-		catch (Exception e){
-			logger.error(e.getMessage(),e);
-		}
-	}
+
 
 
 	private Object methodInvoke(RouteMeta meta,Object target,Object[] args){
@@ -146,34 +176,6 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 		return Instance.enhanceInvoke(target,method.getName(),args);
 	}
 
-	private void doResponse(RouteMeta meta,Object result,RoutingContext context){
-		HttpServerResponse resp = context.response();
-		//1、设置Content-type
-		String produceType = meta.getProduceType();
-		resp.putHeader(Headers.CONTENT_TYPE,produceType);
-		//2、异步的等待结果到来之后再响应
-		if (result instanceof Future){
-			Future<Object> future = (Future<Object>) result;
-			future.setHandler(event -> {
-				if (event.succeeded()){
-					//3、序列化结果
-					String out = serialize(event.result(),produceType);
-					//4、写入
-					resp.end(out);
-				}else{
-					ExceptionManager.handleException(meta,context, AbstractRestVerticle.this, (Exception) event.cause());
-				}
-			});
-		}
-		//2、同步的立刻响应
-		else{
-			//3、序列化结果
-			String out = serialize(result,produceType);
-			//4、写入
-			resp.end(out);
-		}
-
-	}
 
 	//todo 处理转换JSON异常
 	private String serialize(Object in,String contentType){

@@ -59,7 +59,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 	}
 
 	/**
-	 * 注册路由
+	 * 每一个类继承了AbstractRestVerticle都会注册路由,一个类只注册一次，不重复注册
 	 * @param clazz
 	 * @param router
 	 * @param eventBus
@@ -77,7 +77,8 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 
 
 	/**
-	 * 使用EventBus作为逻辑的分发
+     * 每一个AbstractRestVerticle实例都将会将相关的方法注册到EventBus上，使用EventBus来做负载均衡
+	 * 使用EventBus作为具体方法的分发
 	 */
 	private void mountEventBus(){
 		final Class<? extends AbstractRestVerticle> clazz = this.getClass();

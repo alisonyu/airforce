@@ -50,7 +50,6 @@ public class AirForceApplication {
 		deployRestVerticle(vertx,routerManager);
 		//if all restVerticle deployed successfully! begin listen;
 		startHttpServer(vertx,routerManager.getRouter());
-
 	}
 
 	private static void showBanner(){

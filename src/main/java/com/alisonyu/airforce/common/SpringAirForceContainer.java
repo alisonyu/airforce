@@ -74,7 +74,7 @@ public class SpringAirForceContainer implements Container {
 		Objects.requireNonNull(o);
 		ensureInit();
 		applicationContext.getAutowireCapableBeanFactory().autowireBean(o);
-		applicationContext.getAutowireCapableBeanFactory().initializeBean(o,"asdf");
+		applicationContext.getAutowireCapableBeanFactory().initializeBean(o,o.getClass().getName());
 		return o;
 	}
 

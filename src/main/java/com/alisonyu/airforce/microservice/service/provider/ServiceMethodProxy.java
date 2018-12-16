@@ -58,6 +58,7 @@ public class ServiceMethodProxy {
         if (result instanceof Publisher){
             Publisher<Object> observable = (Publisher<Object>)result;
             Flowable.fromPublisher(observable)
+                    //在worker线程池执行逻辑
                     .subscribeOn(AsyncHelper.getBlockingScheduler())
                     .onErrorReturn(t -> t)
                     //.singleOrError()

@@ -11,6 +11,7 @@ import java.util.function.Predicate;
  * @author yuzhiyi
  * @date 2018/10/6 19:13
  */
+@Deprecated
 public interface Container {
 
 	Object injectObject(Object o);

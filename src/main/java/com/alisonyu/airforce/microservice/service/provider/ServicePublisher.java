@@ -2,6 +2,7 @@ package com.alisonyu.airforce.microservice.service.provider;
 
 import com.alisonyu.airforce.microservice.service.utils.MethodNameUtils;
 import com.alisonyu.airforce.tool.instance.Anno;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
@@ -34,7 +35,20 @@ public class ServicePublisher {
                     String name = MethodNameUtils.getName(finalItf,method,finalGroup,finalVersion);
                     EventBus eventBus = vertx.eventBus();
                     ServiceMethodProxy methodProxy = new ServiceMethodProxy(instance,method);
-                    eventBus.<String>consumer(name, methodProxy::call);
+                    eventBus.<String>consumer(name,message -> {
+                        //如果服务是由verticle来提供的，在其上下文执行
+                        if (instance instanceof AbstractVerticle){
+                            vertx.runOnContext(event -> {
+                                methodProxy.call(message);
+                            });
+                        }
+                        //如果服务不是在verticle提供的,在worker线程执行
+                        else{
+                            vertx.executeBlocking(event -> {
+                                methodProxy.call(message);
+                            },null);
+                        }
+                    });
                 });
     }
 

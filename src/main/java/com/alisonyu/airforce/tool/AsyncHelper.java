@@ -31,4 +31,8 @@ public class AsyncHelper {
         blockingScheduler = scheduler;
     }
 
+    public static Scheduler getBlockingScheduler(){
+        return blockingScheduler;
+    }
+
 }

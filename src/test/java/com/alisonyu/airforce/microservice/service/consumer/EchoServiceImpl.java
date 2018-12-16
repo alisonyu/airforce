@@ -1,6 +1,9 @@
 package com.alisonyu.airforce.microservice.service.consumer;
 
 import com.alisonyu.example.test.Person;
+import com.google.common.collect.Lists;
+
+import java.util.List;
 
 public class EchoServiceImpl implements EchoService {
 
@@ -17,5 +20,16 @@ public class EchoServiceImpl implements EchoService {
         return person;
     }
 
+    @Override
+    public List<Person> getPeople() {
+        Person person = new Person();
+        person.setName("aaa");
+        person.setAge(123);
+        return Lists.newArrayList(person);
+    }
 
+    @Override
+    public void hello() {
+        System.out.println("hello");
+    }
 }

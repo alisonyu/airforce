@@ -14,7 +14,6 @@ public class ConsumerProviderTest {
 
     public static void main(String[] args) {
         Vertx vertx =Vertx.vertx();
-        //vertx.eventBus().(new JsonObjectMessageCodec());
         EchoService echoService = new EchoServiceImpl();
         ServicePublisher publisher = new ServicePublisher();
         publisher.publish(vertx,echoService);
@@ -23,6 +22,8 @@ public class ConsumerProviderTest {
         QueryParam param = new QueryParam("alisonyu",123);
         Person person = consumer.getPerson(param);
         System.out.println(Json.encode(person));
+        System.out.println(consumer.getPeople());
+        consumer.hello();
     }
 
 

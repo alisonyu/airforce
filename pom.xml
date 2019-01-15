@@ -66,6 +66,12 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-zookeeper</artifactId>
             <version>${vertx.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -132,6 +138,17 @@
     </dependencies>
 
     <build>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>logback.xml</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <!--指定编译的java版本和编码-->
             <plugin>
@@ -144,6 +161,24 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+
+            <!-- 默认激活开发配制，使用config-dev.properties来替换设置过虑的资源文件中的${key} -->
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <filters>
+                    <filter>application.properties</filter>
+                </filters>
+            </build>
+        </profile>
+    </profiles>
+
+
 
 
 

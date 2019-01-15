@@ -28,6 +28,8 @@ public class AirForceEnv {
 	public static void init(Vertx vertx){
 		if(vertx.fileSystem().existsBlocking(CONFIG_FILE_NAME)){
 			config = vertx.fileSystem().readFileBlocking(CONFIG_FILE_NAME).toJsonObject();
+		}else{
+			config = new JsonObject();
 		}
 	}
 

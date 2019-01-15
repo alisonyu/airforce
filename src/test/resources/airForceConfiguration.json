@@ -3,7 +3,7 @@
     "port":9099,
 
     "spring":{
-      "enable":true,
+      "enable":false,
       "configuration":"com.alisonyu.example.test.SpringConfiguration"
     },
 

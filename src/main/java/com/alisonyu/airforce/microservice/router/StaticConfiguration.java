@@ -15,7 +15,7 @@ import java.nio.charset.Charset;
 public class StaticConfiguration {
 
 	@Value("root")
-	private String root;
+	private String root = "webroot";
 
 	@Value("path")
 	private String path = "/static/*";

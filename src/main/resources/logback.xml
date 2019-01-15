@@ -2,14 +2,14 @@
 <configuration scan="true" scanPeriod="30 seconds">
     <!-- colorful -->
     <property name="CONSOLE_LOG_PATTERN"
-              value="%date{yyyy-MM-dd HH:mm:ss.SSS} | %highlight(%-5level) | %boldYellow(%-30thread) | %boldGreen(%-60logger) -| %msg%n"/>
+              value="%date{yyyy-MM-dd HH:mm:ss.SSS} | %highlight(%-5level) | %boldYellow(%-30thread) | %boldGreen(%-30logger) | %msg%n"/>
+
     <!--Description: http://logback.qos.ch/manual/appenders.html#RollingFileAppender -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <!-- The file name -->
-        <file>airforce.log</file>
+        <file>/${app.name}/airforce.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- archive/ldap-pwd.2014-08-10.zip -->
-            <fileNamePattern>archive/airforce.%d{yyyy-MM-dd}.zip</fileNamePattern>
+            <fileNamePattern>/${app.name}/airforce.log.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- Expired in 30 days -->
             <maxHistory>30</maxHistory>
         </rollingPolicy>
@@ -18,6 +18,26 @@
             <!-- Format http://logback.qos.ch/manual/layouts.html#ClassicPatternLayout -->
             <Pattern>%d [%thread] %-5level %40logger{40} - %msg%n</Pattern>
         </encoder>
+    </appender>
+
+    <!--框架错误日志Appender-->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/${app.name}/airforce-error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/${app.name}/airforce-error.log.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- Expired in 30 days -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!-- Format http://logback.qos.ch/manual/layouts.html#ClassicPatternLayout -->
+            <Pattern>%d [%thread] %-5level %40logger{40} - %msg%n</Pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
     </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
@@ -29,8 +49,20 @@
     <logger name="cn.justfly.training.logging" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
     <logger name="org.apache.zookeeper" level="INFO"/>
-    <root level="DEBUG">
+
+
+    <root level="INFO" additivity="true">
         <appender-ref ref="STDOUT"/>
-        <!--<appender-ref ref="FILE"/>-->
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
     </root>
+
+
+
+
+
+
+
+
+
 </configuration>

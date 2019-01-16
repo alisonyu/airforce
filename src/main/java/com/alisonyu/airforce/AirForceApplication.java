@@ -4,8 +4,6 @@ import com.alisonyu.airforce.cloud.config.ServiceConfig;
 import com.alisonyu.airforce.cloud.core.ServiceRecord;
 import com.alisonyu.airforce.common.Container;
 import com.alisonyu.airforce.common.ContainerFactory;
-import com.alisonyu.airforce.common.SpringAirForceContainer;
-import com.alisonyu.airforce.common.SpringConfiguration;
 import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.configuration.ServerConfig;
@@ -57,7 +55,7 @@ public class AirForceApplication {
 	}
 
 	private static void initConfig(Vertx vertx,Class<?> applicationClass,String ... args){
-		AirForceEnv.init(vertx);
+		AirForceEnv.init(vertx,null);
 		ServerConfig.init(applicationClass, args);
 		logger.debug("读取配置信息成功");
 	}
@@ -79,10 +77,7 @@ public class AirForceApplication {
 	}
 
 	private static Container initContainer(Vertx vertx){
-		SpringConfiguration configuration = AirForceEnv.getConfig(SpringConfiguration.class);
-		if (configuration.isEnable()){
-			ContainerFactory.registerContainer(new SpringAirForceContainer(vertx,configuration));
-		}
+
 		return ContainerFactory.getContainer();
 	}
 

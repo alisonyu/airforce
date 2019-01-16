@@ -101,15 +101,9 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.0.13</version>
+            <version>1.1.11</version>
         </dependency>
 
-        <!--spring 依赖-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot</artifactId>
-            <version>2.0.0.RELEASE</version>
-        </dependency>
 
         <!--主要用于enhance和反射调用-->
         <dependency>
@@ -138,17 +132,6 @@
     </dependencies>
 
     <build>
-
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include>logback.xml</include>
-                </includes>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-
         <plugins>
             <!--指定编译的java版本和编码-->
             <plugin>
@@ -161,25 +144,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>dev</id>
-
-            <!-- 默认激活开发配制，使用config-dev.properties来替换设置过虑的资源文件中的${key} -->
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <filters>
-                    <filter>application.properties</filter>
-                </filters>
-            </build>
-        </profile>
-    </profiles>
-
-
-
-
 
 </project>

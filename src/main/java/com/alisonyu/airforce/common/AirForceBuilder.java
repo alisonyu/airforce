@@ -1,14 +1,17 @@
 package com.alisonyu.airforce.common;
 
 import com.alisonyu.airforce.configuration.AirForceEnv;
+import com.alisonyu.airforce.constant.Banner;
 import com.alisonyu.airforce.microservice.AbstractRestVerticle;
 import com.alisonyu.airforce.microservice.ServiceInitializer;
 import com.alisonyu.airforce.microservice.WebInitializer;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionHandler;
 import com.alisonyu.airforce.microservice.router.RouterMounter;
+import com.alisonyu.airforce.microservice.router.UnsafeLocalMessageCodec;
+import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.instance.Instance;
-import com.sun.org.apache.bcel.internal.generic.FADD;
 import io.vertx.core.Vertx;
+import io.vertx.reactivex.RxHelper;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,10 +34,18 @@ public class AirForceBuilder {
 
     public static AirForceBuilder init(Vertx vertx){
         AirForceBuilder builder = new AirForceBuilder();
+        initVertx(vertx);
         builder.vertx = vertx;
         builder.webInitializer = new WebInitializer(vertx);
         builder.serviceInitializer = new ServiceInitializer(vertx);
         return builder;
+    }
+
+    private static void initVertx(Vertx vertx){
+        //对EventBus注册本地Local Codec
+        vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
+        //对AsyncHelper注册Scheduler
+        AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertx,false));
     }
 
     /**
@@ -101,9 +112,14 @@ public class AirForceBuilder {
      * run airforce application
      */
     public void run(Class<?> startClazz,String[] args){
+        //show banner
+        System.out.println(Banner.defaultBanner);
         //init config
-        AirForceEnv.init(vertx);
-        //
+        AirForceEnv.init(vertx,null);
+        //deploy soa service
+        serviceInitializer.publishServices(services);
+        //deploy web
+        webInitializer.init();
     }
 
 

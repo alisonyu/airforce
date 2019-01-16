@@ -178,7 +178,6 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 	}
 
 
-	//todo 处理转换JSON异常
 	private String serialize(Object in,String contentType){
 		String out;
 		switch (contentType){
@@ -192,6 +191,9 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 				else if (in.getClass().isArray()){
 					Object[] arr = (Object[]) in;
 					out = new JsonArray(Arrays.asList(arr)).toString();
+				}
+				else if (in instanceof Number){
+					out = in.toString();
 				}
 				else{
 					out = JsonObject.mapFrom(in).toString();

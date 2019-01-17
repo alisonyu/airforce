@@ -11,7 +11,10 @@ import com.alisonyu.airforce.microservice.router.UnsafeLocalMessageCodec;
 import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.reactivex.RxHelper;
+import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,23 +28,47 @@ import java.util.stream.Collectors;
 public class AirForceBuilder {
 
     private Vertx vertx;
+    private VertxOptions vertxOptions;
     private List<AbstractRestVerticle> restVerticles = Collections.emptyList();
+    private Set<Class<? extends AbstractRestVerticle>> verticleClassSet = Collections.emptySet();
+    private Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> verticleFactory;
     private List<ExceptionHandler> exceptionHandlers = Collections.emptyList();
     private List<RouterMounter> routerMounters = Collections.emptyList();
     private List<Object> services = Collections.emptyList();
+    private ClusterManager clusterManager;
     private WebInitializer webInitializer;
     private ServiceInitializer serviceInitializer;
 
-    public static AirForceBuilder init(Vertx vertx){
+    public static AirForceBuilder build(){
         AirForceBuilder builder = new AirForceBuilder();
-        initVertx(vertx);
-        builder.vertx = vertx;
-        builder.webInitializer = new WebInitializer(vertx);
-        builder.serviceInitializer = new ServiceInitializer(vertx);
         return builder;
     }
 
-    private static void initVertx(Vertx vertx){
+    public AirForceBuilder vertx(Vertx vertx) {
+        this.vertx = vertx;
+        return this;
+    }
+
+    public AirForceBuilder vertxOptions(VertxOptions vertxOptions){
+        this.vertxOptions = vertxOptions;
+        return this;
+    }
+
+    private void initVertx(){
+        Vertx vertx = this.vertx;
+        if (vertx == null){
+            VertxOptions vertxOptions = this.vertxOptions == null ? new VertxOptions() : this.vertxOptions;
+            if (this.clusterManager != null){
+                vertxOptions.setClustered(true);
+                vertxOptions.setClusterManager(clusterManager);
+            }
+            if (vertxOptions.isClustered()){
+                vertx = AsyncHelper.<Vertx>blockingGet(handler-> Vertx.clusteredVertx(vertxOptions,handler));
+            }else{
+                vertx = AsyncHelper.<Vertx>blockingGet(handler -> Vertx.vertx(vertxOptions));
+            }
+            this.vertx = vertx;
+        }
         //对EventBus注册本地Local Codec
         vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
         //对AsyncHelper注册Scheduler
@@ -79,8 +106,8 @@ public class AirForceBuilder {
     public AirForceBuilder restVerticles(Set<Class<? extends AbstractRestVerticle>> classSet,
                                          Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory){
 
-        webInitializer.setRestVerticleClazz(classSet);
-        webInitializer.setFactory(factory);
+        this.verticleClassSet = classSet;
+        this.verticleFactory = factory;
         return this;
     }
 
@@ -108,17 +135,28 @@ public class AirForceBuilder {
         return this;
     }
 
+    public AirForceBuilder setClusterManager(ClusterManager clusterManager){
+        this.clusterManager = clusterManager;
+        return this;
+    }
+
     /**
      * run airforce application
      */
     public void run(Class<?> startClazz,String[] args){
         //show banner
         System.out.println(Banner.defaultBanner);
+        //init vertx
+        this.initVertx();
+        this.webInitializer = new WebInitializer(this.vertx);
+        this.serviceInitializer = new ServiceInitializer(this.vertx);
         //init config
         AirForceEnv.init(vertx,null);
         //deploy soa service
         serviceInitializer.publishServices(services);
         //deploy web
+        webInitializer.setRestVerticleClazz(verticleClassSet);
+        webInitializer.setFactory(verticleFactory);
         webInitializer.init();
     }
 

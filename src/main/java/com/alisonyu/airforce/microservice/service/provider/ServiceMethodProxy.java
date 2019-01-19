@@ -89,7 +89,8 @@ public class ServiceMethodProxy {
     private void replyResult(Object result,Message message){
         ServiceResult serviceResult = new ServiceResult(result);
         JsonObject jsonResult  = JsonObject.mapFrom(serviceResult);
-        message.reply(jsonResult,deliveryOptions);
+        //message.reply(jsonResult,deliveryOptions);
+        message.reply(jsonResult.toString());
     }
 
 

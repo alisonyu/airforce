@@ -86,6 +86,7 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 		//将在RestVerticle定义的方法转化为RouteMeta
 		List<RouteMeta> routeMetas = getRouteMetas(clazz, rootPath);
 		EventBus eventBus = getVertx().eventBus();
+
 		routeMetas.forEach(routeMeta -> {
 			String url = DispatcherRouter.getDispathcerAddress(routeMeta.getHttpMethod(),routeMeta.getPath());
 			eventBus.<RoutingContext>localConsumer(url)
@@ -196,7 +197,12 @@ public abstract class AbstractRestVerticle extends AbstractVerticle {
 					out = in.toString();
 				}
 				else{
-					out = JsonObject.mapFrom(in).toString();
+					try{
+						out = JsonObject.mapFrom(in).toString();
+					}catch (Exception e){
+						logger.error(e.getMessage());
+						return in.toString();
+					}
 				}
 				break;
 			default: out = in.toString(); break;

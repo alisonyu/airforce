@@ -3,19 +3,26 @@ package com.alisonyu.airforce.configuration;
 import com.alisonyu.airforce.configuration.anno.Configuration;
 import com.alisonyu.airforce.configuration.anno.Value;
 import com.alisonyu.airforce.constant.Strings;
+import com.alisonyu.airforce.tool.FileUtils;
 import com.alisonyu.airforce.tool.instance.Instance;
 import com.alisonyu.airforce.tool.Pair;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import org.omg.SendingContext.RunTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * 该类用于读取AirForce应用的配置文件的配置项
@@ -27,18 +34,20 @@ public class AirForceEnv {
 	private static Logger logger = LoggerFactory.getLogger(AirForceEnv.class);
 	private static final String DEFAULT_CONFIG_PROPERTIES = "airforce.properties";
 	private static final String CONFIG_FILE_NAME = "airforce.json";
-	private static Config config;
+	private static Class<?> startClass;
+	private static Config  config;
 
 	/**
 	 * 框架内部使用，用户不应该主动调用该方法
 	 */
-	public static void init(Vertx vertx,String configPath){
+	public static void init(Class<?> startClass,String configPath){
+		AirForceEnv.startClass = startClass;
 		if (configPath!=null){
 			String type = configPath.substring(configPath.lastIndexOf("."));
 			if ("properties".equals(type)){
-				config = getPropertiesConfig(vertx,configPath);
+				config = getPropertiesConfig(configPath);
 			}else if ("json".equals(type)){
-				config = getJsonConfig(vertx,configPath);
+				config = getJsonConfig(configPath);
 			}else{
 				logger.error("unknown config type");
 				throw new RuntimeException("unknow config typee");
@@ -48,12 +57,13 @@ public class AirForceEnv {
 			}
 		}
 		else{
-			if (vertx.fileSystem().existsBlocking(DEFAULT_CONFIG_PROPERTIES)){
-				config = getPropertiesConfig(vertx,DEFAULT_CONFIG_PROPERTIES);
-			}
-			else if (vertx.fileSystem().existsBlocking(CONFIG_FILE_NAME)){
-				config = getJsonConfig(vertx,CONFIG_FILE_NAME);
-			}
+//			if (FileUtils.existFiles( DEFAULT_CONFIG_PROPERTIES)){
+//				config = getPropertiesConfig(DEFAULT_CONFIG_PROPERTIES);
+//			}
+//			else if (FileUtils.existFiles(CONFIG_FILE_NAME)){
+//				config = getJsonConfig(CONFIG_FILE_NAME);
+//			}
+            config = getPropertiesConfig(DEFAULT_CONFIG_PROPERTIES);
 			if (config == null){
 				config = new EmptyConfig();
 			}
@@ -61,31 +71,35 @@ public class AirForceEnv {
 	}
 
 
-	private static Config getPropertiesConfig(Vertx vertx,String path){
-		ClassLoader classLoader = vertx.getClass().getClassLoader();
-		if (vertx.fileSystem().existsBlocking(path)){
-			Properties properties = new Properties();
-			InputStream in  = classLoader.getResourceAsStream("airforce.properties");
-			try {
-				properties.load(in);
-				return new PropertiesConfig(properties);
-			} catch (IOException e) {
-				logger.error("init config error",e);
-				throw new RuntimeException(e);
-			}
-		}else{
-			return null;
-		}
+	private static Config getPropertiesConfig(String path){
+		ClassLoader classLoader = AirForceEnv.startClass.getClassLoader();
+        String basePath = classLoader.getResource("").getPath();
+        String filePath = basePath + path;
+		File file = new File(filePath);
+		if (file.exists()){
+            Properties properties = new Properties();
+            InputStream in  = classLoader.getResourceAsStream("airforce.properties");
+            try {
+                properties.load(in);
+                return new PropertiesConfig(properties);
+            } catch (IOException e) {
+                logger.error("init config error",e);
+                throw new RuntimeException(e);
+            }
+        }else{
+		    return null;
+        }
 	}
 
-	private static Config getJsonConfig(Vertx vertx,String path){
-		if(vertx.fileSystem().existsBlocking(CONFIG_FILE_NAME)){
-			JsonObject jsonConfig  = vertx.fileSystem().readFileBlocking(CONFIG_FILE_NAME).toJsonObject();
+	private static Config getJsonConfig(String path){
+		if(FileUtils.existFiles(CONFIG_FILE_NAME)){
+			JsonObject jsonConfig  =FileUtils.readJsonObject(CONFIG_FILE_NAME);
 			return new JSONConfig(jsonConfig);
 		}else{
 			return null;
 		}
 	}
+
 
 
 	/**

@@ -6,10 +6,14 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
 public class ServicePublisher {
+
+    private Logger logger = LoggerFactory.getLogger(ServiceProvider.class);
 
     public void publish(Vertx vertx,Object instance){
         Class<?> clazz = instance.getClass();
@@ -36,6 +40,7 @@ public class ServicePublisher {
                     EventBus eventBus = vertx.eventBus();
                     ServiceMethodProxy methodProxy = new ServiceMethodProxy(instance,method);
                     eventBus.<String>consumer(name,message -> {
+                        logger.info("receive message {}",message);
                         //如果服务是由verticle来提供的，在其上下文执行
                         if (instance instanceof AbstractVerticle){
                             vertx.runOnContext(event -> {

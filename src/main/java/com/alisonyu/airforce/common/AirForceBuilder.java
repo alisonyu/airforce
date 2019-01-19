@@ -1,8 +1,10 @@
 package com.alisonyu.airforce.common;
 
+import com.alisonyu.airforce.cloud.config.ZookeeperConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.constant.Banner;
 import com.alisonyu.airforce.microservice.AbstractRestVerticle;
+import com.alisonyu.airforce.microservice.DeamoVerticle;
 import com.alisonyu.airforce.microservice.ServiceInitializer;
 import com.alisonyu.airforce.microservice.WebInitializer;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionHandler;
@@ -12,12 +14,16 @@ import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.reactivex.RxHelper;
 import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,6 +33,7 @@ import java.util.stream.Collectors;
  */
 public class AirForceBuilder {
 
+    private static Logger logger = LoggerFactory.getLogger(AirForceBuilder.class);
     private Vertx vertx;
     private VertxOptions vertxOptions;
     private List<AbstractRestVerticle> restVerticles = Collections.emptyList();
@@ -61,11 +68,14 @@ public class AirForceBuilder {
             if (this.clusterManager != null){
                 vertxOptions.setClustered(true);
                 vertxOptions.setClusterManager(clusterManager);
+                if (clusterManager instanceof ZookeeperClusterManager){
+                    initZookeeperClusterManager(clusterManager);
+                }
             }
             if (vertxOptions.isClustered()){
                 vertx = AsyncHelper.<Vertx>blockingGet(handler-> Vertx.clusteredVertx(vertxOptions,handler));
             }else{
-                vertx = AsyncHelper.<Vertx>blockingGet(handler -> Vertx.vertx(vertxOptions));
+                vertx = Vertx.vertx(vertxOptions);
             }
             this.vertx = vertx;
         }
@@ -135,8 +145,17 @@ public class AirForceBuilder {
         return this;
     }
 
+    /**
+     * set user define cluster Manager
+     */
     public AirForceBuilder setClusterManager(ClusterManager clusterManager){
         this.clusterManager = clusterManager;
+        return this;
+    }
+
+
+    public AirForceBuilder cluster(){
+        this.clusterManager = new ZookeeperClusterManager();
         return this;
     }
 
@@ -146,18 +165,36 @@ public class AirForceBuilder {
     public void run(Class<?> startClazz,String[] args){
         //show banner
         System.out.println(Banner.defaultBanner);
+        AirForceEnv.init(startClazz,null);
         //init vertx
         this.initVertx();
         this.webInitializer = new WebInitializer(this.vertx);
         this.serviceInitializer = new ServiceInitializer(this.vertx);
-        //init config
-        AirForceEnv.init(vertx,null);
         //deploy soa service
         serviceInitializer.publishServices(services);
         //deploy web
         webInitializer.setRestVerticleClazz(verticleClassSet);
         webInitializer.setFactory(verticleFactory);
         webInitializer.init();
+        this.vertx.deployVerticle(new DeamoVerticle());
+        logger.info("Airforce Application started!");
+    }
+
+    private void initZookeeperClusterManager(ClusterManager clusterManager){
+        if (clusterManager instanceof ZookeeperClusterManager){
+            ZookeeperClusterManager zookeeperClusterManager = (ZookeeperClusterManager) clusterManager;
+            if (zookeeperClusterManager.getConfig().isEmpty()){
+                ZookeeperConfig zookeeperConfig = AirForceEnv.getConfig(ZookeeperConfig.class);
+                JsonObject config = zookeeperClusterManager.getConfig();
+                config.put("zookeeperHosts",zookeeperConfig.getServers());
+                config.put("rootPath",zookeeperConfig.getNamespace());
+                config.put("sessionTimeout",zookeeperConfig.getSessionTimeout());
+                config.put("connectTimeout",zookeeperConfig.getConnectTimeout());
+                config.getJsonObject("retry",new JsonObject()).put("initialSleepTime",zookeeperConfig.getRetryIntervalSleepTime());
+                config.getJsonObject("retry",new JsonObject()).put("maxTimes",zookeeperConfig.getRetryMaxTime());
+                config.getJsonObject("retry",new JsonObject()).put("intervalTimes",zookeeperConfig.getRetryIntervalTime());
+            }
+        }
     }
 
 

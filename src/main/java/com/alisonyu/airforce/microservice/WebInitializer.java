@@ -29,8 +29,8 @@ public class WebInitializer {
     private List<RouterMounter> routerMounters = Collections.emptyList();
     private Set<Class<? extends AbstractRestVerticle>> restVerticleClazz = Collections.emptySet();
     private Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory = Instance::instance;
-
     private RouterManager routerManager;
+    private boolean isWeb = false;
 
 
     public WebInitializer(Vertx vertx){
@@ -57,6 +57,10 @@ public class WebInitializer {
 
     private void deployRestVerticle(Set<Class<? extends AbstractRestVerticle>> restVerticleClazz,
                                    Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory){
+        isWeb = ! restVerticleClazz.isEmpty();
+        if (!isWeb){
+            return;
+        }
         //mount router to eventbus
         restVerticleClazz.forEach(clazz -> AbstractRestVerticle.mountRouter(clazz,routerManager.getRouter(),vertx.eventBus()));
         //deploy real verticle
@@ -70,6 +74,9 @@ public class WebInitializer {
     }
 
     private void startHttpServer(Vertx vertx, Router router){
+        if (!isWeb){
+            return;
+        }
         TimeMeter timeMeter = new TimeMeter();
         timeMeter.start();
         Integer port = AirForceEnv.getConfig(AirForceDefaultConfig.SERVER_PORT,Integer.class);

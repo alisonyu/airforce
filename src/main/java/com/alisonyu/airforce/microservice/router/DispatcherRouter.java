@@ -35,8 +35,14 @@ public class DispatcherRouter implements RouterMounter {
 	}
 
 	public static String getDispathcerAddress(HttpMethod method, String url){
-		return "web://airforce/"+method+url;
+		return "web:airforce#"+method+processUrl(url);
 	}
+
+	private static String processUrl(String url){
+		return url.replaceAll("\\/","#");
+	}
+
+
 
 
 

@@ -55,7 +55,7 @@ public class AirForceApplication {
 	}
 
 	private static void initConfig(Vertx vertx,Class<?> applicationClass,String ... args){
-		AirForceEnv.init(vertx,null);
+		AirForceEnv.init(applicationClass,null);
 		ServerConfig.init(applicationClass, args);
 		logger.debug("读取配置信息成功");
 	}

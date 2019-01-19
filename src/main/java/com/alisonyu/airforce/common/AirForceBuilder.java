@@ -159,6 +159,10 @@ public class AirForceBuilder {
         return this;
     }
 
+    public Vertx getVertx(){
+        return this.vertx;
+    }
+
     /**
      * run airforce application
      */

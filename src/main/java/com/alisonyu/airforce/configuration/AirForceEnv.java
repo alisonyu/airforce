@@ -57,13 +57,12 @@ public class AirForceEnv {
 			}
 		}
 		else{
-//			if (FileUtils.existFiles( DEFAULT_CONFIG_PROPERTIES)){
-//				config = getPropertiesConfig(DEFAULT_CONFIG_PROPERTIES);
-//			}
-//			else if (FileUtils.existFiles(CONFIG_FILE_NAME)){
-//				config = getJsonConfig(CONFIG_FILE_NAME);
-//			}
-            config = getPropertiesConfig(DEFAULT_CONFIG_PROPERTIES);
+			if (FileUtils.existResources( DEFAULT_CONFIG_PROPERTIES)){
+				config = getPropertiesConfig(DEFAULT_CONFIG_PROPERTIES);
+			}
+			else if (FileUtils.existResources(CONFIG_FILE_NAME)){
+				config = getJsonConfig(CONFIG_FILE_NAME);
+			}
 			if (config == null){
 				config = new EmptyConfig();
 			}
@@ -72,13 +71,9 @@ public class AirForceEnv {
 
 
 	private static Config getPropertiesConfig(String path){
-		ClassLoader classLoader = AirForceEnv.startClass.getClassLoader();
-        String basePath = classLoader.getResource("").getPath();
-        String filePath = basePath + path;
-		File file = new File(filePath);
-		if (file.exists()){
+		if (FileUtils.existResources (path)){
             Properties properties = new Properties();
-            InputStream in  = classLoader.getResourceAsStream("airforce.properties");
+            InputStream in  = Thread.currentThread().getContextClassLoader().getResourceAsStream("airforce.properties");
             try {
                 properties.load(in);
                 return new PropertiesConfig(properties);

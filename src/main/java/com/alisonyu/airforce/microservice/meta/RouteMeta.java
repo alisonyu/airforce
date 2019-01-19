@@ -92,6 +92,7 @@ public class RouteMeta {
 
 	private void initMode(Method method){
 		Annotation anno = method.getAnnotation(Sync.class);
+		//todo 判断类型是否是Bean类型，如果是全部走SYNC
 		this.mode = anno == null ? CallMode.ASYNC : CallMode.SYNC;
 	}
 

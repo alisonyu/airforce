@@ -33,7 +33,7 @@ public class AirForceEnv {
 
 	private static Logger logger = LoggerFactory.getLogger(AirForceEnv.class);
 	private static final String DEFAULT_CONFIG_PROPERTIES = "airforce.properties";
-	private static final String CONFIG_FILE_NAME = "airforce.json";
+	private static final String CONFIG_FILE_NAME = "/airforce.json";
 	private static Class<?> startClass;
 	private static Config  config;
 

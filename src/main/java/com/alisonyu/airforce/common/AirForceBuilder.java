@@ -11,6 +11,7 @@ import com.alisonyu.airforce.microservice.core.exception.ExceptionHandler;
 import com.alisonyu.airforce.microservice.router.RouterMounter;
 import com.alisonyu.airforce.microservice.router.UnsafeLocalMessageCodec;
 import com.alisonyu.airforce.tool.AsyncHelper;
+import com.alisonyu.airforce.tool.TimeMeter;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -25,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,7 @@ public class AirForceBuilder {
     private ClusterManager clusterManager;
     private WebInitializer webInitializer;
     private ServiceInitializer serviceInitializer;
+    private AtomicBoolean inited = new AtomicBoolean(false);
 
     public static AirForceBuilder build(){
         AirForceBuilder builder = new AirForceBuilder();
@@ -164,14 +167,31 @@ public class AirForceBuilder {
     }
 
     /**
+     *  init Vertx
+     */
+    public synchronized Vertx init(){
+        if (this.inited.get()){
+            return this.vertx;
+        }else{
+            this.initVertx();
+            this.inited.set(true);
+            return this.vertx;
+        }
+    }
+
+    /**
      * run airforce application
      */
     public void run(Class<?> startClazz,String[] args){
+        TimeMeter timeMeter = new TimeMeter();
+        timeMeter.start();
         //show banner
-        System.out.println(Banner.defaultBanner);
+        showBanner();
+        //init config
         AirForceEnv.init(startClazz,null);
         //init vertx
-        this.initVertx();
+        this.init();
+        //init web and soa service
         this.webInitializer = new WebInitializer(this.vertx);
         this.serviceInitializer = new ServiceInitializer(this.vertx);
         //deploy soa service
@@ -181,7 +201,12 @@ public class AirForceBuilder {
         webInitializer.setFactory(verticleFactory);
         webInitializer.init();
         this.vertx.deployVerticle(new DeamoVerticle());
-        logger.info("Airforce Application started!");
+        long costTime = timeMeter.end();
+        logger.info("Airforce Application started! cost {}ms",costTime);
+    }
+
+    private void showBanner(){
+        System.out.println(Banner.defaultBanner);
     }
 
     private void initZookeeperClusterManager(ClusterManager clusterManager){

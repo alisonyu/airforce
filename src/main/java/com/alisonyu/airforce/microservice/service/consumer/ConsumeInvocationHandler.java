@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ConsumeInvocationHandler implements InvocationHandler {
@@ -71,7 +72,9 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                 }
             });
         })
+        //3秒超时
         .timeout(3, TimeUnit.SECONDS);
+
         //暂时只允许消费Flowable
         if (Flowable.class.isAssignableFrom(returnType)){
             return flowable;
@@ -84,16 +87,24 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                     .subscribe(future::complete);
             return future;
         }
-        //否则同步获取结果
+        //否则同步获取结果 todo fix死锁问题
         else {
             //block result
             AtomicReference<Object> res = new AtomicReference<>();
             flowable
                     .observeOn(AsyncHelper.getBlockingScheduler())
+                    .doOnError(e -> {
+                        if (e instanceof TimeoutException){
+                            logger.error("call {} timeout 3000",method.toGenericString());
+                        }
+                        throw new RuntimeException(e);
+                    })
                     .blockingSubscribe(o -> {
+                        logger.info("blocking thread {}",Thread.currentThread());
                         res.set(o);
                     } );
             Object realResult = res.get();
+            //Object realResult = flowable.blockingFirst();
             return realResult == VOID ? null : realResult;
         }
     }

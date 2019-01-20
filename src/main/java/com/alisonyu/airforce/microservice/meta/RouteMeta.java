@@ -11,9 +11,12 @@ import com.alisonyu.airforce.microservice.core.param.ParamMeta;
 import com.alisonyu.airforce.tool.*;
 import com.alisonyu.airforce.tool.instance.Anno;
 import com.alisonyu.airforce.tool.instance.Reflect;
+import io.reactivex.Flowable;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import java.lang.annotation.Annotation;
@@ -28,6 +31,8 @@ import java.util.stream.Collectors;
  * @date 2018/9/12 10:47
  */
 public class RouteMeta {
+
+	Logger logger = LoggerFactory.getLogger(RouteMeta.class);
 
 	/**
 	 * 挂载的路径
@@ -92,8 +97,19 @@ public class RouteMeta {
 
 	private void initMode(Method method){
 		Annotation anno = method.getAnnotation(Sync.class);
-		//todo 判断类型是否是Bean类型，如果是全部走SYNC
-		this.mode = anno == null ? CallMode.ASYNC : CallMode.SYNC;
+		Class<?> returnType = method.getReturnType();
+		if (Flowable.class.isAssignableFrom(returnType) || Future.class.isAssignableFrom(returnType)) {
+			this.mode = anno == null ? CallMode.ASYNC : CallMode.SYNC;
+		}
+		//如果非 Flowable或者Future 返回类型的 并且没有@SYNC，那么报错
+		else{
+			if (anno == null){
+				logger.error("{} should be run in sync,please use @Sync",method.toGenericString());
+				throw new IllegalArgumentException();
+			}else{
+				this.mode = CallMode.SYNC;
+			}
+		}
 	}
 
 	private void initParamMetas(Method method){

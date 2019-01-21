@@ -48,12 +48,10 @@ public class ConsumeInvocationHandler implements InvocationHandler {
         JsonObject payload = new JsonObject().put("params", arr);
         //获取服务调用地址
         String address = MethodNameUtils.getName(serviceClass,method,group,version);
-        logger.info("call {}",address);
         Class<? > returnType = method.getReturnType();
         Flowable<Object> flowable = Flowable.fromPublisher(publisher->{
             eb.<String>send(address,payload.toString(),as -> {
                 if (as.succeeded()){
-                    logger.info("receive {}", as.result().body());
                     if (returnType == Void.TYPE){
                         publisher.onNext(VOID);
                         publisher.onComplete();
@@ -87,7 +85,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                     .subscribe(future::complete);
             return future;
         }
-        //否则同步获取结果 todo fix死锁问题
+        //否则同步获取结果
         else {
             //block result
             AtomicReference<Object> res = new AtomicReference<>();
@@ -100,7 +98,6 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                         throw new RuntimeException(e);
                     })
                     .blockingSubscribe(o -> {
-                        logger.info("blocking thread {}",Thread.currentThread());
                         res.set(o);
                     } );
             Object realResult = res.get();

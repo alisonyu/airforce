@@ -27,8 +27,8 @@ public class WebInitializer {
     private Logger logger = LoggerFactory.getLogger(WebInitializer.class);
     private Vertx vertx;
     private List<RouterMounter> routerMounters = Collections.emptyList();
-    private Set<Class<? extends AbstractRestVerticle>> restVerticleClazz = Collections.emptySet();
-    private Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory = Instance::instance;
+    private Set<Class<? extends AirforceVerticle>> restVerticleClazz = Collections.emptySet();
+    private Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory = Instance::instance;
     private RouterManager routerManager;
     private boolean isWeb = false;
 
@@ -55,17 +55,17 @@ public class WebInitializer {
         this.routerManager = routerManager;
     }
 
-    private void deployRestVerticle(Set<Class<? extends AbstractRestVerticle>> restVerticleClazz,
-                                   Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory){
+    private void deployRestVerticle(Set<Class<? extends AirforceVerticle>> restVerticleClazz,
+                                   Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory){
         isWeb = ! restVerticleClazz.isEmpty();
         if (!isWeb){
             return;
         }
         //mount router to eventbus
-        restVerticleClazz.forEach(clazz -> AbstractRestVerticle.mountRouter(clazz,routerManager.getRouter(),vertx.eventBus()));
+        restVerticleClazz.forEach(clazz -> AirforceVerticle.mountRouter(clazz,routerManager.getRouter(),vertx.eventBus()));
         //deploy real verticle
         restVerticleClazz.forEach(clazz -> {
-            AbstractRestVerticle tpl = factory.apply(clazz);
+            AirforceVerticle tpl = factory.apply(clazz);
             DeploymentOptions deploymentOptions = tpl.getDeployOption();
             vertx.deployVerticle(()->{
                 return factory.apply(clazz);
@@ -113,19 +113,19 @@ public class WebInitializer {
         this.routerMounters = routerMounters;
     }
 
-    public Set<Class<? extends AbstractRestVerticle>> getRestVerticleClazz() {
+    public Set<Class<? extends AirforceVerticle>> getRestVerticleClazz() {
         return restVerticleClazz;
     }
 
-    public void setRestVerticleClazz(Set<Class<? extends AbstractRestVerticle>> restVerticleClazz) {
+    public void setRestVerticleClazz(Set<Class<? extends AirforceVerticle>> restVerticleClazz) {
         this.restVerticleClazz = restVerticleClazz;
     }
 
-    public Function<Class<? extends AbstractRestVerticle>, AbstractRestVerticle> getFactory() {
+    public Function<Class<? extends AirforceVerticle>, AirforceVerticle> getFactory() {
         return factory;
     }
 
-    public void setFactory(Function<Class<? extends AbstractRestVerticle>, AbstractRestVerticle> factory) {
+    public void setFactory(Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory) {
         this.factory = factory;
     }
 

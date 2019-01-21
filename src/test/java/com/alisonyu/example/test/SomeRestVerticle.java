@@ -1,6 +1,6 @@
 package com.alisonyu.example.test;
 
-import com.alisonyu.airforce.microservice.AbstractRestVerticle;
+import com.alisonyu.airforce.microservice.AirforceVerticle;
 import io.vertx.core.DeploymentOptions;
 
 import javax.ws.rs.GET;
@@ -11,7 +11,7 @@ import javax.ws.rs.Path;
  * @date 2018/9/14 16:05
  */
 @Path("some")
-public class SomeRestVerticle extends AbstractRestVerticle {
+public class SomeRestVerticle extends AirforceVerticle {
 
 	@Path("thread")
 	@GET

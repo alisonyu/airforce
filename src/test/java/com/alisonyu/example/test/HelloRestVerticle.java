@@ -1,6 +1,6 @@
 package com.alisonyu.example.test;
 
-import com.alisonyu.airforce.microservice.AbstractRestVerticle;
+import com.alisonyu.airforce.microservice.AirforceVerticle;
 import com.alisonyu.airforce.microservice.anno.BodyParam;
 import com.alisonyu.airforce.microservice.anno.Sync;
 import io.reactivex.Flowable;
@@ -20,7 +20,7 @@ import java.util.Map;
  * @date 2018/9/12 10:17
  */
 @Path("hello")
-public class HelloRestVerticle extends AbstractRestVerticle {
+public class HelloRestVerticle extends AirforceVerticle {
 
 	private int counter = 1;
 

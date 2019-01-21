@@ -8,7 +8,7 @@ import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.configuration.ServerConfig;
 import com.alisonyu.airforce.constant.Banner;
-import com.alisonyu.airforce.microservice.AbstractRestVerticle;
+import com.alisonyu.airforce.microservice.AirforceVerticle;
 import com.alisonyu.airforce.microservice.HttpServerVerticle;
 import com.alisonyu.airforce.microservice.ext.HtmlTemplateEngine;
 import com.alisonyu.airforce.microservice.router.*;
@@ -100,16 +100,16 @@ public class AirForceApplication {
 	private static void deployRestVerticle(Vertx vertx,RouterManager routerManager){
 		//get all restVerticle class
 		Container container = ContainerFactory.getContainer();
-		Set<Class<? extends AbstractRestVerticle>> restVerticleClasses = container.getClassesImpl(AbstractRestVerticle.class);
+		Set<Class<? extends AirforceVerticle>> restVerticleClasses = container.getClassesImpl(AirforceVerticle.class);
 		CountDownLatch latch = new CountDownLatch(restVerticleClasses.size());
-		//deploy AbstractRestVerticle
+		//deploy AirforceVerticle
 		restVerticleClasses
 				.forEach(c->{
-					AbstractRestVerticle.mountRouter(c,routerManager.getRouter(),vertx.eventBus());
+					AirforceVerticle.mountRouter(c,routerManager.getRouter(),vertx.eventBus());
 					try {
-						AbstractRestVerticle verticle = c.newInstance();
+						AirforceVerticle verticle = c.newInstance();
 						vertx.deployVerticle(()->{
-							AbstractRestVerticle v = Instance.instance(c);
+							AirforceVerticle v = Instance.instance(c);
 							container.injectObject(v);
 							return v;
 						},verticle.getDeployOption(),rs->{

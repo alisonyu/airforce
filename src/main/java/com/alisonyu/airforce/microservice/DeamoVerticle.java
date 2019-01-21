@@ -1,4 +1,4 @@
 package com.alisonyu.airforce.microservice;
 
-public class DeamoVerticle extends AbstractRestVerticle {
+public class DeamoVerticle extends AirforceVerticle {
 }

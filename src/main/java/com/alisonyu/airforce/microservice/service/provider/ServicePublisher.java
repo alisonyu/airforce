@@ -13,9 +13,9 @@ import java.util.Arrays;
 
 public class ServicePublisher {
 
-    private Logger logger = LoggerFactory.getLogger(ServiceProvider.class);
+    private static Logger logger = LoggerFactory.getLogger(ServiceProvider.class);
 
-    public void publish(Vertx vertx,Object instance){
+    public static void publish(Vertx vertx,Object instance){
         Class<?> clazz = instance.getClass();
         Class<?> itf = ServiceProvider.defaultClass;
         String group = ServiceProvider.defaultGroup;
@@ -40,7 +40,6 @@ public class ServicePublisher {
                     EventBus eventBus = vertx.eventBus();
                     ServiceMethodProxy methodProxy = new ServiceMethodProxy(instance,method);
                     eventBus.<String>consumer(name,message -> {
-                        logger.info("receive message {}",message);
                         //如果服务是由verticle来提供的，在其上下文执行
                         if (instance instanceof AbstractVerticle){
                             vertx.runOnContext(event -> {
@@ -55,6 +54,8 @@ public class ServicePublisher {
                         }
                     });
                 });
+
+        logger.info("publish service:{} version:{} group:{} by instance {} successfully!",finalItf.getName(),finalVersion,finalGroup,instance.getClass().getName());
     }
 
 }

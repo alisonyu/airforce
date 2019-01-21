@@ -3,7 +3,7 @@ package com.alisonyu.airforce.common;
 import com.alisonyu.airforce.cloud.config.ZookeeperConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.constant.Banner;
-import com.alisonyu.airforce.microservice.AbstractRestVerticle;
+import com.alisonyu.airforce.microservice.AirforceVerticle;
 import com.alisonyu.airforce.microservice.DeamoVerticle;
 import com.alisonyu.airforce.microservice.ServiceInitializer;
 import com.alisonyu.airforce.microservice.WebInitializer;
@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -38,9 +37,8 @@ public class AirForceBuilder {
     private static Logger logger = LoggerFactory.getLogger(AirForceBuilder.class);
     private Vertx vertx;
     private VertxOptions vertxOptions;
-    private List<AbstractRestVerticle> restVerticles = Collections.emptyList();
-    private Set<Class<? extends AbstractRestVerticle>> verticleClassSet = Collections.emptySet();
-    private Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> verticleFactory;
+    private Set<Class<? extends AirforceVerticle>> verticleClassSet = Collections.emptySet();
+    private Function<Class<? extends AirforceVerticle>, AirforceVerticle> verticleFactory;
     private List<ExceptionHandler> exceptionHandlers = Collections.emptyList();
     private List<RouterMounter> routerMounters = Collections.emptyList();
     private List<Object> services = Collections.emptyList();
@@ -65,6 +63,8 @@ public class AirForceBuilder {
     }
 
     private void initVertx(){
+        TimeMeter timeMeter = new TimeMeter();
+        timeMeter.start();
         Vertx vertx = this.vertx;
         if (vertx == null){
             VertxOptions vertxOptions = this.vertxOptions == null ? new VertxOptions() : this.vertxOptions;
@@ -86,29 +86,32 @@ public class AirForceBuilder {
         vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
         //对AsyncHelper注册Scheduler
         AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertx,false));
+
+        long costTime = timeMeter.end();
+        logger.info("init vertx cost {}ms",costTime);
     }
 
     /**
      * deploy rest verticles by instance
      */
-    public AirForceBuilder restVerticles(List<AbstractRestVerticle> restVerticles){
-        Set<Class<? extends AbstractRestVerticle>> classes = restVerticles.stream()
-                .map(AbstractRestVerticle::getClass)
+    public AirForceBuilder restVerticles(List<AirforceVerticle> restVerticles){
+        Set<Class<? extends AirforceVerticle>> classes = restVerticles.stream()
+                .map(AirforceVerticle::getClass)
                 .distinct()
                 .collect(Collectors.toSet());
-        Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory = clazz -> restVerticles.stream()
+        Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory = clazz -> restVerticles.stream()
                 .filter(v -> clazz.isAssignableFrom(v.getClass()))
                 .findFirst()
                 .orElse(null);
-        restVerticles(classes,factory);
+        airforceVerticles(classes,factory);
         return this;
     }
 
     /**
      * deploy restVerticles by class
      */
-    public AirForceBuilder restVerticle(Set<Class<? extends AbstractRestVerticle>> set){
-        restVerticles(set, Instance::instance);
+    public AirForceBuilder airforceVerticles(Set<Class<? extends AirforceVerticle>> set){
+        airforceVerticles(set, Instance::instance);
         return this;
     }
 
@@ -116,8 +119,8 @@ public class AirForceBuilder {
     /**
      * deploy rest verticles by class and factory function
      */
-    public AirForceBuilder restVerticles(Set<Class<? extends AbstractRestVerticle>> classSet,
-                                         Function<Class<? extends AbstractRestVerticle>,AbstractRestVerticle> factory){
+    public AirForceBuilder airforceVerticles(Set<Class<? extends AirforceVerticle>> classSet,
+                                         Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory){
 
         this.verticleClassSet = classSet;
         this.verticleFactory = factory;

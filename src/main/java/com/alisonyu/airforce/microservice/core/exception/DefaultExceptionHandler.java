@@ -22,12 +22,12 @@ public class DefaultExceptionHandler implements ExceptionHandler {
 	private static final Logger logger = LoggerFactory.getLogger(DefaultExceptionHandler.class);
 
 	@Override
-	public List<Class<? extends Exception>> conform() {
+	public List<Class<? extends Throwable>> conform() {
 		return Collections.singletonList(Exception.class);
 	}
 
 	@Override
-	public Object handle(RouteMeta routeMeta, RoutingContext context, Exception e) {
+	public Object handle(RouteMeta routeMeta, RoutingContext context, Throwable e) {
 		//记录log
 		logger.error("{} occur error: {}",routeMeta.getPath(),e.getMessage());
 		//设置500返回码

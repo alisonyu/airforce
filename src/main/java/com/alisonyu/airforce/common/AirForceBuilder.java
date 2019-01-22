@@ -10,6 +10,7 @@ import com.alisonyu.airforce.microservice.WebInitializer;
 import com.alisonyu.airforce.microservice.core.exception.ExceptionHandler;
 import com.alisonyu.airforce.microservice.router.RouterMounter;
 import com.alisonyu.airforce.microservice.router.UnsafeLocalMessageCodec;
+import com.alisonyu.airforce.microservice.service.utils.ServiceMessageCodec;
 import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.TimeMeter;
 import com.alisonyu.airforce.tool.instance.Instance;
@@ -84,6 +85,7 @@ public class AirForceBuilder {
         }
         //对EventBus注册本地Local Codec
         vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
+        vertx.eventBus().registerCodec(new ServiceMessageCodec());
         //对AsyncHelper注册Scheduler
         AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertx,false));
 

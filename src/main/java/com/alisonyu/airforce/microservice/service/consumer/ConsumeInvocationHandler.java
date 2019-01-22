@@ -2,6 +2,7 @@ package com.alisonyu.airforce.microservice.service.consumer;
 
 import com.alisonyu.airforce.microservice.service.provider.ServiceResult;
 import com.alisonyu.airforce.microservice.service.utils.MethodNameUtils;
+import com.alisonyu.airforce.microservice.service.utils.ServiceMessageDeliveryOptions;
 import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.instance.Reflect;
 import com.google.common.collect.Lists;
@@ -43,26 +44,18 @@ public class ConsumeInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         EventBus eb = vertx.eventBus();
-        JsonArray arr = args == null ? new JsonArray() : new JsonArray(Lists.newArrayList(args));
-        //构建参数
-        JsonObject payload = new JsonObject().put("params", arr);
         //获取服务调用地址
         String address = MethodNameUtils.getName(serviceClass,method,group,version);
         Class<? > returnType = method.getReturnType();
         Flowable<Object> flowable = Flowable.fromPublisher(publisher->{
-            eb.<String>send(address,payload.toString(),as -> {
+            eb.<Object>send(address,Lists.newArrayList(args), ServiceMessageDeliveryOptions.instance, as -> {
                 if (as.succeeded()){
                     if (returnType == Void.TYPE){
                         publisher.onNext(VOID);
                         publisher.onComplete();
                     }else{
-                        String reply = as.result().body();
-                        JsonObject jsonResult = new JsonObject(reply);
-                        ServiceResult serviceResult = jsonResult.mapTo(ServiceResult.class);
-                        Class<?> clazz = Reflect.getClass(serviceResult.getClazz());
-                        String json = serviceResult.getSerializeResult();
-                        Object o = Json.decodeValue(json,clazz);
-                        publisher.onNext(o);
+                        Object result = as.result().body();
+                        publisher.onNext(result);
                         publisher.onComplete();
                     }
                 }else{

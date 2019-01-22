@@ -8,7 +8,8 @@ public class MethodNameUtils {
 
     public static String getName(String itfName,String methodName,String[] argsName,String group,String version){
         String name = itfName+"#"+methodName+"#("+ String.join(",", argsName)+")#"+group+"#"+version;
-        return processName(name);
+        return name;
+        //return processName(name);
     }
 
     public static String getName(Class itf, Method method,String group,String version){

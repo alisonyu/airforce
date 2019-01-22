@@ -1,5 +1,6 @@
 package com.alisonyu.airforce.microservice.service.provider;
 
+import com.alisonyu.airforce.microservice.service.utils.ServiceMessageDeliveryOptions;
 import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.instance.Instance;
 import io.reactivex.Flowable;
@@ -15,6 +16,7 @@ import org.reactivestreams.Subscription;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.List;
 
 /**
  * 服务方法代理类
@@ -33,23 +35,11 @@ public class ServiceMethodProxy {
     }
 
 
-    public void call(Message<String> message){
+    public void call(Message<List<Object>> message){
         Object result = null;
         try{
-            String json = message.body();
-            JsonObject jsonObject = new JsonObject(json);
-            JsonArray params = jsonObject.getJsonArray("params");
-            Class<?>[] typeClasses = proxyMethod.getParameterTypes();
-            Type[] types = proxyMethod.getGenericParameterTypes();
-            if (params.size() != typeClasses.length){
-                throw new IllegalArgumentException("参数数量不统一");
-            }
-            Object[] callParams = new Object[params.size()];
-            for (int i=0;i<params.size();i++){
-                Object param = Instance.cast(params.getValue(i),types[i],typeClasses[i]);
-                callParams[i] = param;
-            }
-            result = proxyMethod.invoke(target,callParams);
+            List<Object> callParams = message.body();
+            result = proxyMethod.invoke(target,callParams.toArray());
         }catch (Throwable e){
             e.printStackTrace();
             result = e;
@@ -81,17 +71,11 @@ public class ServiceMethodProxy {
         else{
             replyResult(result,message);
         }
-
-
     }
 
 
     private void replyResult(Object result,Message message){
-        ServiceResult serviceResult = new ServiceResult(result);
-        JsonObject jsonResult  = JsonObject.mapFrom(serviceResult);
-        //message.reply(jsonResult,deliveryOptions);
-        message.reply(jsonResult.toString());
+        message.reply(result, ServiceMessageDeliveryOptions.instance);
     }
-
 
 }

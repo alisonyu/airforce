@@ -74,6 +74,13 @@
             <version>1.11.7</version>
         </dependency>
 
+        <!--使用fst进行序列化和反序列化-->
+        <dependency>
+            <groupId>de.ruedigermoeller</groupId>
+            <artifactId>fst</artifactId>
+            <version>2.57</version>
+        </dependency>
+
         <!--测试用依赖-->
         <dependency>
             <groupId>junit</groupId>

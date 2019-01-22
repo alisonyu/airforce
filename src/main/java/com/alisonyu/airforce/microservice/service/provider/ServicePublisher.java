@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class ServicePublisher {
 
@@ -39,7 +40,7 @@ public class ServicePublisher {
                     String name = MethodNameUtils.getName(finalItf,method,finalGroup,finalVersion);
                     EventBus eventBus = vertx.eventBus();
                     ServiceMethodProxy methodProxy = new ServiceMethodProxy(instance,method);
-                    eventBus.<String>consumer(name,message -> {
+                    eventBus.<List<Object>>consumer(name, message -> {
                         //如果服务是由verticle来提供的，在其上下文执行
                         if (instance instanceof AbstractVerticle){
                             vertx.runOnContext(event -> {

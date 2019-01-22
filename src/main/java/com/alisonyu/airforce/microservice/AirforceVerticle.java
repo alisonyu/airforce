@@ -136,14 +136,15 @@ public class AirforceVerticle extends AbstractVerticle {
                     }
                     return publisher;
                 })
-                //将结果根据ProduceType序列化
+				.onErrorReturn(t -> ExceptionManager.handleException(routeMeta,ctx,this,t))
+				//将结果根据ProduceType序列化
                 .map(in -> serialize(in,routeMeta.getProduceType()))
                 //以上结果根据异步或者同步在不同的模式下选择不同的调度器
                 .subscribeOn(scheduler)
                 //获得结果之后我们切换Worker线程
                 .observeOn(blockingScheduler)
                 //将结果写入到http response中
-                .subscribe(content->{
+				.subscribe(content->{
                     HttpServerResponse resp = ctx.response();
                     //1、设置Content-type
                     String produceType = routeMeta.getProduceType();
@@ -192,6 +193,9 @@ public class AirforceVerticle extends AbstractVerticle {
 				}
 				else if (in instanceof Number){
 					out = in.toString();
+				}
+				else if (in instanceof String){
+					return String.valueOf(in);
 				}
 				else{
 					try{

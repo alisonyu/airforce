@@ -10,6 +10,8 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.templ.TemplateEngine;
 import io.vertx.reactivex.FlowableHelper;
 
+import java.util.Map;
+
 /**
  * 解析Html
  * @author 四昭
@@ -38,5 +40,10 @@ public class HtmlTemplateEngine implements TemplateEngine {
                     }
                 });
 
+    }
+
+    @Override
+    public void render(Map<String, Object> map, String s, Handler<AsyncResult<Buffer>> handler) {
+        //todo
     }
 }

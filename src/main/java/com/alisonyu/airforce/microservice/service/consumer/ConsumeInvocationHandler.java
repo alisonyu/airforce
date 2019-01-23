@@ -28,7 +28,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
     private String version;
     private Vertx vertx;
     private CircuitBreakerOptions circuitBreakerOptions;
-    private Object fallBackInstance;
+    private final Object fallBackInstance;
     private static Object VOID = new Object();
 
     public ConsumeInvocationHandler(Vertx vertx,Class<?> serviceClass,String group,String version,CircuitBreakerOptions circuitBreakerOptions,Object fallbackInstance){
@@ -62,7 +62,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                 });
             },v -> {
                 logger.error("triger fallback");
-                if (fallBackInstance == null){
+                if (this.fallBackInstance == null){
                     throw new RuntimeException(v);
                 }
                 Flowable<Object> fallbackFlowable;
@@ -94,8 +94,16 @@ public class ConsumeInvocationHandler implements InvocationHandler {
             }).setHandler(ar -> {
                 if (ar.succeeded()){
                     Object result = ar.result();
-                    publisher.onNext(result);
-                    publisher.onComplete();
+                    //if fallback method invoke,this block will be executed
+                    if (result instanceof Flowable){
+                        ((Flowable) result).subscribe(o-> {
+                            publisher.onNext(o);
+                            publisher.onComplete();
+                        });
+                    }else{
+                        publisher.onNext(result);
+                        publisher.onComplete();
+                    }
                 }else{
                     publisher.onError(ar.cause());
                 }

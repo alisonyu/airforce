@@ -17,7 +17,7 @@ public class ConsumerProviderTest {
         EchoService echoService = new EchoServiceImpl();
         ServicePublisher publisher = new ServicePublisher();
         publisher.publish(vertx,echoService);
-        EchoService consumer = ConsumerProvider.getConsumer(vertx,EchoService.class, ServiceProvider.defaultGroup,ServiceProvider.defaultVersion,null);
+        EchoService consumer = ConsumerProvider.getConsumer(vertx,EchoService.class, ServiceProvider.defaultGroup,ServiceProvider.defaultVersion,null,null);
         System.out.println(consumer.echo("hello world"));
         QueryParam param = new QueryParam("alisonyu",123);
         Person person = consumer.getPerson(param);

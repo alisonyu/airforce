@@ -10,6 +10,7 @@ import com.alisonyu.airforce.tool.Pair;
 public interface AirForceDefaultConfig {
 
 	Pair<String,Integer> SERVER_PORT = Pair.of("server.port",9090);
+	Pair<String,Integer> BACKPRESSURE_BUFFER_SIZE = Pair.of("backpressure.buffer.size",10240);
 
 
 }

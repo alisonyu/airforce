@@ -4,8 +4,10 @@ import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.microservice.ext.HtmlTemplateEngine;
 import com.alisonyu.airforce.microservice.router.*;
+import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.TimeMeter;
 import com.alisonyu.airforce.tool.instance.Instance;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
@@ -81,20 +83,11 @@ public class WebInitializer {
         timeMeter.start();
         Integer port = AirForceEnv.getConfig(AirForceDefaultConfig.SERVER_PORT,Integer.class);
         HttpServerVerticle httpServerVerticle = new HttpServerVerticle(router,port);
-        CountDownLatch latch = new CountDownLatch(1);
-        vertx.deployVerticle(httpServerVerticle,as->{
-            latch.countDown();
-            if (as.succeeded()){
-                logger.info("server listen at port: {}! cost {}ms",port,timeMeter.end());
-            }else{
-                logger.error(as.cause().getMessage());
-                as.cause().printStackTrace();
-            }
-        });
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        try{
+            String res = AsyncHelper.<String>blockingGet(handler -> vertx.deployVerticle(httpServerVerticle,handler));
+            logger.info("server listen at port: {}! cost {}ms",port,timeMeter.end());
+        }catch (Exception e){
+            logger.error("http start error!");
         }
     }
 

@@ -1,8 +1,14 @@
 package com.alisonyu.airforce.microservice;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.http.HttpServer;
+import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
+import com.alisonyu.airforce.configuration.AirForceEnv;
 import io.vertx.ext.web.Router;
+import io.vertx.reactivex.RxHelper;
+import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.core.http.HttpServer;
+import io.vertx.reactivex.core.http.HttpServerRequest;
+
+import java.io.InputStream;
 
 /**
  * @author yuzhiyi
@@ -21,7 +27,23 @@ public class HttpServerVerticle extends AbstractVerticle {
 	@Override
 	public void start() throws Exception {
 		HttpServer server = vertx.createHttpServer();
-		server.requestHandler(router::accept).listen(port);
+		Integer bufferSize = AirForceEnv.getConfig(AirForceDefaultConfig.BACKPRESSURE_BUFFER_SIZE, Integer.class);
+		server.requestStream()
+				.toFlowable()
+				.map(HttpServerRequest::pause)
+				//back pressure protect app from crashing
+				.onBackpressureDrop(req -> {
+					req.response().setStatusCode(503).end();
+				})
+				.observeOn(RxHelper.scheduler(vertx.getDelegate()),false,bufferSize)
+				.subscribe(req -> {
+					req.resume();
+					router.handle(req.getDelegate());
+				});
+
+		server.rxListen(port)
+				.subscribe(res -> System.out.println("start server successfully"));
+
 	}
 
 }

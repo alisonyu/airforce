@@ -1,5 +1,5 @@
 # airforce
-## 如何安装？
+### 如何安装？
 
 ```shell
 git clone https://github.com/alisonyu/airforce.git
@@ -7,9 +7,9 @@ mvn clean
 mvn install
 ```
 
-注：该项目还在Demo阶段，不推荐使用。
 
-## Quick Start
+
+### Quick Start
 
 在你的应用引入依赖
 
@@ -75,6 +75,34 @@ public class DemoApplication {
 curl localhost:9099/hello?name=airforce
 curl localhost:9099/echo?content=airforce
 ```
+
+
+
+
+
+### AirForceVerticle
+
+继承AbstractVerticle，提供Rest接口和异步服务的能力
+
+
+
+### 接口风格
+
+Vertx是一个全异步的网络框架，因此无论是服务接口还是Rest接口，需要使用返回Flowable 或者是 Future（Vertx）来表示你的返回结果
+
+
+
+### Web
+
+基于Vertx Web进行封装，使用vertx web来进行路由管理，最后的处理是通过EventBus本地分派到对应的Verticle中执行。
+
+Web接口的注解配置基于JSR311风格
+
+
+
+
+
+
 
 
 

@@ -30,7 +30,10 @@ public class HttpServerVerticle extends AbstractVerticle {
 		Integer bufferSize = AirForceEnv.getConfig(AirForceDefaultConfig.BACKPRESSURE_BUFFER_SIZE, Integer.class);
 		server.requestStream()
 				.toFlowable()
-				.map(HttpServerRequest::pause)
+				.map(req ->{
+					req.pause();
+					return req;
+				})
 				//back pressure protect app from crashing
 				.onBackpressureDrop(req -> {
 					req.response().setStatusCode(503).end();
@@ -38,12 +41,10 @@ public class HttpServerVerticle extends AbstractVerticle {
 				.observeOn(RxHelper.scheduler(vertx.getDelegate()),false,bufferSize)
 				.subscribe(req -> {
 					req.resume();
-					router.handle(req.getDelegate());
+					router.accept(req.getDelegate());
 				});
 
-		server.rxListen(port)
-				.subscribe(res -> System.out.println("start server successfully"));
-
+		server.listen(port);
 	}
 
 }

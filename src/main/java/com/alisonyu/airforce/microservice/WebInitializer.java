@@ -7,7 +7,6 @@ import com.alisonyu.airforce.microservice.router.*;
 import com.alisonyu.airforce.tool.AsyncHelper;
 import com.alisonyu.airforce.tool.TimeMeter;
 import com.alisonyu.airforce.tool.instance.Instance;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 
 /**
@@ -29,8 +27,8 @@ public class WebInitializer {
     private Logger logger = LoggerFactory.getLogger(WebInitializer.class);
     private Vertx vertx;
     private List<RouterMounter> routerMounters = Collections.emptyList();
-    private Set<Class<? extends AirforceVerticle>> restVerticleClazz = Collections.emptySet();
-    private Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory = Instance::instance;
+    private Set<Class<? extends AirForceVerticle>> restVerticleClazz = Collections.emptySet();
+    private Function<Class<? extends AirForceVerticle>, AirForceVerticle> factory = Instance::instance;
     private RouterManager routerManager;
     private boolean isWeb = false;
 
@@ -57,17 +55,17 @@ public class WebInitializer {
         this.routerManager = routerManager;
     }
 
-    private void deployRestVerticle(Set<Class<? extends AirforceVerticle>> restVerticleClazz,
-                                   Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory){
+    private void deployRestVerticle(Set<Class<? extends AirForceVerticle>> restVerticleClazz,
+                                   Function<Class<? extends AirForceVerticle>, AirForceVerticle> factory){
         isWeb = ! restVerticleClazz.isEmpty();
         if (!isWeb){
             return;
         }
         //mount router to eventbus
-        restVerticleClazz.forEach(clazz -> AirforceVerticle.mountRouter(clazz,routerManager.getRouter(),vertx.eventBus()));
+        restVerticleClazz.forEach(clazz -> AirForceVerticle.mountRouter(clazz,routerManager.getRouter(),vertx.eventBus()));
         //deploy real verticle
         restVerticleClazz.forEach(clazz -> {
-            AirforceVerticle tpl = factory.apply(clazz);
+            AirForceVerticle tpl = factory.apply(clazz);
             DeploymentOptions deploymentOptions = tpl.getDeployOption();
             vertx.deployVerticle(()->{
                 return factory.apply(clazz);
@@ -106,19 +104,19 @@ public class WebInitializer {
         this.routerMounters = routerMounters;
     }
 
-    public Set<Class<? extends AirforceVerticle>> getRestVerticleClazz() {
+    public Set<Class<? extends AirForceVerticle>> getRestVerticleClazz() {
         return restVerticleClazz;
     }
 
-    public void setRestVerticleClazz(Set<Class<? extends AirforceVerticle>> restVerticleClazz) {
+    public void setRestVerticleClazz(Set<Class<? extends AirForceVerticle>> restVerticleClazz) {
         this.restVerticleClazz = restVerticleClazz;
     }
 
-    public Function<Class<? extends AirforceVerticle>, AirforceVerticle> getFactory() {
+    public Function<Class<? extends AirForceVerticle>, AirForceVerticle> getFactory() {
         return factory;
     }
 
-    public void setFactory(Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory) {
+    public void setFactory(Function<Class<? extends AirForceVerticle>, AirForceVerticle> factory) {
         this.factory = factory;
     }
 

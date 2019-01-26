@@ -42,8 +42,5 @@ public class HtmlTemplateEngine implements TemplateEngine {
 
     }
 
-    @Override
-    public void render(Map<String, Object> map, String s, Handler<AsyncResult<Buffer>> handler) {
-        //todo
-    }
+
 }

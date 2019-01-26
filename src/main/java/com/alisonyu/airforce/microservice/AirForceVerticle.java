@@ -35,9 +35,9 @@ import java.util.stream.Collectors;
  * @author yuzhiyi
  * @date 2018/9/12 10:13
  */
-public class AirforceVerticle extends AbstractVerticle {
+public class AirForceVerticle extends AbstractVerticle {
 
-	private static Logger logger = LoggerFactory.getLogger(AirforceVerticle.class);
+	private static Logger logger = LoggerFactory.getLogger(AirForceVerticle.class);
     private Scheduler vertxScheduler;
     private Scheduler blockingScheduler;
 
@@ -63,7 +63,7 @@ public class AirforceVerticle extends AbstractVerticle {
 	 * @param router
 	 * @param eventBus
 	 */
-	public static void mountRouter(Class<? extends AirforceVerticle> clazz, Router router, EventBus eventBus){
+	public static void mountRouter(Class<? extends AirForceVerticle> clazz, Router router, EventBus eventBus){
 		String rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH ;
 		//将在RestVerticle定义的方法转化为RouteMeta
 		List<RouteMeta> routeMetas = getRouteMetas(clazz,rootPath);
@@ -80,7 +80,7 @@ public class AirforceVerticle extends AbstractVerticle {
 	 * 使用EventBus作为具体方法的分发
 	 */
 	private void mountEventBus(){
-		final Class<? extends AirforceVerticle> clazz = this.getClass();
+		final Class<? extends AirForceVerticle> clazz = this.getClass();
 		final String rootPath = clazz.isAnnotationPresent(Path.class) ? clazz.getAnnotation(Path.class).value() : Strings.SLASH;
 		//将在RestVerticle定义的方法转化为RouteMeta
 		List<RouteMeta> routeMetas = getRouteMetas(clazz, rootPath);
@@ -108,7 +108,7 @@ public class AirforceVerticle extends AbstractVerticle {
 	    //解析参数，并将参数作为入口
         Flowable.just(ArgsBuilder.build(routeMeta,ctx))
                 //方法调用
-                .map(args -> methodInvoke(routeMeta, AirforceVerticle.this,args))
+                .map(args -> methodInvoke(routeMeta, AirForceVerticle.this,args))
                 //如果异常，进入异常处理器，返回异常结果
                 .onErrorReturn(e -> ExceptionManager.handleException(routeMeta,ctx,this,(Exception) e))
                 //判断结果类型，生成结果流
@@ -156,7 +156,7 @@ public class AirforceVerticle extends AbstractVerticle {
 
 
 
-	private static List<RouteMeta> getRouteMetas(Class<? extends AirforceVerticle> clazz, String rootPath){
+	private static List<RouteMeta> getRouteMetas(Class<? extends AirForceVerticle> clazz, String rootPath){
 		return Arrays.stream(clazz.getDeclaredMethods())
 				.filter(m->m.isAnnotationPresent(Path.class))
 				.map(m-> new RouteMeta(rootPath,m))

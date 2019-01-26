@@ -3,7 +3,7 @@ package com.alisonyu.airforce.common;
 import com.alisonyu.airforce.cloud.config.ZookeeperConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.constant.Banner;
-import com.alisonyu.airforce.microservice.AirforceVerticle;
+import com.alisonyu.airforce.microservice.AirForceVerticle;
 import com.alisonyu.airforce.microservice.DeamoVerticle;
 import com.alisonyu.airforce.microservice.ServiceInitializer;
 import com.alisonyu.airforce.microservice.WebInitializer;
@@ -38,8 +38,8 @@ public class AirForceBuilder {
     private static Logger logger = LoggerFactory.getLogger(AirForceBuilder.class);
     private Vertx vertx;
     private VertxOptions vertxOptions;
-    private Set<Class<? extends AirforceVerticle>> verticleClassSet = Collections.emptySet();
-    private Function<Class<? extends AirforceVerticle>, AirforceVerticle> verticleFactory;
+    private Set<Class<? extends AirForceVerticle>> verticleClassSet = Collections.emptySet();
+    private Function<Class<? extends AirForceVerticle>, AirForceVerticle> verticleFactory;
     private List<ExceptionHandler> exceptionHandlers = Collections.emptyList();
     private List<RouterMounter> routerMounters = Collections.emptyList();
     private List<Object> services = Collections.emptyList();
@@ -96,12 +96,12 @@ public class AirForceBuilder {
     /**
      * deploy rest verticles by instance
      */
-    public AirForceBuilder restVerticles(List<AirforceVerticle> restVerticles){
-        Set<Class<? extends AirforceVerticle>> classes = restVerticles.stream()
-                .map(AirforceVerticle::getClass)
+    public AirForceBuilder restVerticles(List<AirForceVerticle> restVerticles){
+        Set<Class<? extends AirForceVerticle>> classes = restVerticles.stream()
+                .map(AirForceVerticle::getClass)
                 .distinct()
                 .collect(Collectors.toSet());
-        Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory = clazz -> restVerticles.stream()
+        Function<Class<? extends AirForceVerticle>, AirForceVerticle> factory = clazz -> restVerticles.stream()
                 .filter(v -> clazz.isAssignableFrom(v.getClass()))
                 .findFirst()
                 .orElse(null);
@@ -112,7 +112,7 @@ public class AirForceBuilder {
     /**
      * deploy restVerticles by class
      */
-    public AirForceBuilder airforceVerticles(Set<Class<? extends AirforceVerticle>> set){
+    public AirForceBuilder airforceVerticles(Set<Class<? extends AirForceVerticle>> set){
         airforceVerticles(set, Instance::instance);
         return this;
     }
@@ -121,8 +121,8 @@ public class AirForceBuilder {
     /**
      * deploy rest verticles by class and factory function
      */
-    public AirForceBuilder airforceVerticles(Set<Class<? extends AirforceVerticle>> classSet,
-                                         Function<Class<? extends AirforceVerticle>, AirforceVerticle> factory){
+    public AirForceBuilder airforceVerticles(Set<Class<? extends AirForceVerticle>> classSet,
+                                         Function<Class<? extends AirForceVerticle>, AirForceVerticle> factory){
 
         this.verticleClassSet = classSet;
         this.verticleFactory = factory;

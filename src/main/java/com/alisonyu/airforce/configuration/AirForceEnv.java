@@ -2,27 +2,19 @@ package com.alisonyu.airforce.configuration;
 
 import com.alisonyu.airforce.configuration.anno.Configuration;
 import com.alisonyu.airforce.configuration.anno.Value;
-import com.alisonyu.airforce.constant.Strings;
-import com.alisonyu.airforce.tool.FileUtils;
-import com.alisonyu.airforce.tool.instance.Instance;
-import com.alisonyu.airforce.tool.Pair;
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import io.vertx.core.Vertx;
+import com.alisonyu.airforce.common.constant.Strings;
+import com.alisonyu.airforce.common.tool.io.FileUtils;
+import com.alisonyu.airforce.common.tool.instance.Instance;
+import com.alisonyu.airforce.common.tool.Pair;
 import io.vertx.core.json.JsonObject;
-import org.omg.SendingContext.RunTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 /**
  * 该类用于读取AirForce应用的配置文件的配置项

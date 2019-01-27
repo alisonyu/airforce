@@ -1,9 +1,10 @@
 package com.alisonyu.airforce.configuration;
 
-import com.alisonyu.airforce.cloud.config.anno.EnableAirforceCloud;
-import com.alisonyu.airforce.tool.instance.Anno;
+import com.alisonyu.airforce.cluster.config.anno.EnableAirforceCloud;
+import com.alisonyu.airforce.common.tool.instance.Anno;
 
 /**
+ * todo 重构
  * 服务器配置
  * @author yuzhiyi
  * @date 2018/9/17 16:29

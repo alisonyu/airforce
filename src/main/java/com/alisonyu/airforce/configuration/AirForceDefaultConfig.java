@@ -1,6 +1,6 @@
 package com.alisonyu.airforce.configuration;
 
-import com.alisonyu.airforce.tool.Pair;
+import com.alisonyu.airforce.common.tool.Pair;
 
 /**
  * AirForce框架默认配置

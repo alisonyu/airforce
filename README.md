@@ -39,7 +39,14 @@ public class DemoRestVerticle extends AirForceVerticle {
         future.complete(content);
         return future;
     }
-
+    
+    @GET
+    @Path("/blockingHello")
+    @Sync
+    public String blockingHello(@QueryParam("name")String name){
+        return "hello "+name;
+    }
+    
 }
 ```
 
@@ -97,6 +104,58 @@ Vertx是一个全异步的网络框架，因此无论是服务接口还是Rest�
 基于Vertx Web进行封装，使用vertx web来进行路由管理，最后的处理是通过EventBus本地分派到对应的Verticle中执行。
 
 Web接口的注解配置基于JSR311风格
+
+
+
+基本形式
+
+```java
+public class DemoRestVerticle extends AirForceVerticle {
+
+    @GET
+    @Path("/hello")
+    public Flowable<String> hello(@QueryParam("name")String name){
+        return Flowable.just("hello "+name);
+    }
+
+    @GET
+    @Path("/echo")
+    public Future<String> echo(@QueryParam("content")String content){
+        Future<String> future = Future.future();
+        future.complete(content);
+        return future;
+    }
+
+
+    @GET
+    @Path("/blockingHello")
+    @Sync
+    public String blockingHello(@QueryParam("name")String name){
+        return "hello "+name;
+    }
+}
+
+```
+
+使用Flowable和Future作为返回值的方法，他会在该Verticle的context上下文执行。
+
+当不使用Flowable和Future的时候，一定要使用@Sync去修饰方法
+
+使用@Sync修饰的方法将会在Vertx的BlockingThreadPool中运行，不推荐使用
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-package com.alisonyu.airforce.common.tool;
+package com.alisonyu.airforce.common.tool.async;
 
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
@@ -31,6 +31,18 @@ public class AsyncHelper {
         return future;
     }
 
+    public static <T> Flowable<T> fromFuture(Future<T> future){
+        return Flowable.fromPublisher(publisher -> {
+            future.setHandler(as -> {
+                if (as.succeeded()){
+                    publisher.onNext(as.result());
+                }else{
+                    publisher.onError(as.cause());
+                }
+            });
+        });
+    }
+
     public static <T> T blockingGet(Consumer<Handler<AsyncResult<T>>> consumer){
         CompletableFuture<T> future = new CompletableFuture<>();
         consumer.accept(handler -> {
@@ -46,6 +58,8 @@ public class AsyncHelper {
             throw new RuntimeException(e);
         }
     }
+
+
 
     public static void registerScheduler(Scheduler scheduler){
         blockingScheduler = scheduler;

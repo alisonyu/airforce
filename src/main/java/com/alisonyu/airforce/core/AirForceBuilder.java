@@ -7,19 +7,22 @@ import com.alisonyu.airforce.web.exception.ExceptionHandler;
 import com.alisonyu.airforce.web.router.RouterMounter;
 import com.alisonyu.airforce.web.transfer.UnsafeLocalMessageCodec;
 import com.alisonyu.airforce.microservice.utils.ServiceMessageCodec;
-import com.alisonyu.airforce.common.tool.AsyncHelper;
+import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.alisonyu.airforce.common.tool.TimeMeter;
 import com.alisonyu.airforce.common.tool.instance.Instance;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.micrometer.MicrometerMetricsOptions;
+import io.vertx.micrometer.VertxInfluxDbOptions;
 import io.vertx.reactivex.RxHelper;
 import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,7 +37,7 @@ public class AirForceBuilder {
     private static Logger logger = LoggerFactory.getLogger(AirForceBuilder.class);
     private Vertx vertx;
     private VertxOptions vertxOptions;
-    private Set<Class<? extends AirForceVerticle>> verticleClassSet = Collections.emptySet();
+    private Set<Class<? extends AirForceVerticle>> verticleClassSet = new HashSet<>();
     private Function<Class<? extends AirForceVerticle>, AirForceVerticle> verticleFactory;
     private List<ExceptionHandler> exceptionHandlers = Collections.emptyList();
     private List<RouterMounter> routerMounters = Collections.emptyList();
@@ -65,6 +68,22 @@ public class AirForceBuilder {
         Vertx vertx = this.vertx;
         if (vertx == null){
             VertxOptions vertxOptions = this.vertxOptions == null ? new VertxOptions() : this.vertxOptions;
+
+            //init metric
+//            vertxOptions.setMetricsOptions(
+//                new DropwizardMetricsOptions().setJmxEnabled(true).setJmxDomain("airforce")
+//                    );
+
+            vertxOptions.setMetricsOptions(
+                    new MicrometerMetricsOptions()
+                    .setInfluxDbOptions(new VertxInfluxDbOptions()
+                        .setEnabled(true)
+                        .setUri("http://localhost:8086")
+                        .setDb("airforce")
+                    ).setEnabled(true)
+            );
+
+            // init cluster
             if (this.clusterManager != null){
                 vertxOptions.setClustered(true);
                 vertxOptions.setClusterManager(clusterManager);

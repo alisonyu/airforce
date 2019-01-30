@@ -5,7 +5,7 @@ import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.web.HttpServerVerticle;
 import com.alisonyu.airforce.web.template.HtmlTemplateEngine;
 import com.alisonyu.airforce.web.router.*;
-import com.alisonyu.airforce.common.tool.AsyncHelper;
+import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.alisonyu.airforce.common.tool.TimeMeter;
 import com.alisonyu.airforce.common.tool.instance.Instance;
 import com.alisonyu.airforce.web.config.StaticConfiguration;
@@ -41,20 +41,21 @@ public class WebInitializer {
 
 
     private void initRouterManager(List<RouterMounter> routerMounters){
-        RouterManager routerManager = new RouterManager(vertx);
+       RouterManager.init(vertx);
         //1、进行Web基本挂载
-        routerManager.doMount(new WebRouteMounter());
+        RouterManager.mountRouter(new WebRouteMounter());
         //2、进行静态路由的挂载
         StaticConfiguration staticConfiguration = AirForceEnv.getConfig(StaticConfiguration.class);
-        routerManager.doMount(new StaticRouteMounter(staticConfiguration));
+        RouterManager.mountRouter(new StaticRouteMounter(staticConfiguration));
         //3、模板文件进行挂载
-        routerManager.getRouter()
-                .routeWithRegex(".+\\.html")
+        RouterManager.mountRouter(router -> {
+            router.
+                routeWithRegex(".+\\.html")
                 .order(Integer.MAX_VALUE)
                 .blockingHandler(new TemplateHandlerImpl(new HtmlTemplateEngine(),"template","text/html"));
+        });
         //4、挂载其他Mounter
-        routerMounters.forEach(mounter -> routerManager.doMount(mounter));
-        this.routerManager = routerManager;
+        routerMounters.forEach(mounter -> RouterManager.mountRouter(mounter));
     }
 
     private void deployRestVerticle(Set<Class<? extends AirForceVerticle>> restVerticleClazz,
@@ -63,8 +64,6 @@ public class WebInitializer {
         if (!isWeb){
             return;
         }
-        //mount router to eventbus
-        restVerticleClazz.forEach(clazz -> AirForceVerticle.mountRouter(clazz,routerManager.getRouter(),vertx.eventBus()));
         //deploy real verticle
         restVerticleClazz.forEach(clazz -> {
             AirForceVerticle tpl = factory.apply(clazz);

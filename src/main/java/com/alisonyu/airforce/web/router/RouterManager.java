@@ -11,17 +11,13 @@ import io.vertx.ext.web.Router;
  */
 public class RouterManager {
 
-	private Router router;
+	private static Router router;
 
-	public RouterManager(Vertx vertx){
+	public static synchronized void init(Vertx vertx){
 		router = Router.router(vertx);
 	}
 
-	public Router getRouter(){
-		return router;
-	}
-
-	public void doMount(RouterMounter routerMounter){
+	public static void mountRouter(RouterMounter routerMounter){
 		routerMounter.mount(router);
 	}
 

@@ -30,4 +30,5 @@ public class StaticRouteMounter implements RouterMounter{
 		final String path = configuration.getPath();
 		router.route(path).handler(staticHandler);
 	}
+
 }

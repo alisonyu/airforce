@@ -38,10 +38,10 @@ public class HttpServerVerticle extends AbstractVerticle {
 				.onBackpressureDrop(req -> {
 					req.response().setStatusCode(503).end();
 				})
-				.observeOn(RxHelper.scheduler(vertx.getDelegate()),false,bufferSize)
+				//.observeOn(RxHelper.scheduler(vertx.getDelegate()),false,bufferSize)
 				.subscribe(req -> {
 					req.resume();
-					router.accept(req.getDelegate());
+					router.handle(req.getDelegate());
 				});
 
 		server.listen(port);

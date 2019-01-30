@@ -7,6 +7,7 @@ import com.alisonyu.airforce.common.tool.Pair;
  * @author yuzhiyi
  * @date 2018/9/17 15:40
  */
+@Deprecated
 public interface AirForceDefaultConfig {
 
 	Pair<String,Integer> SERVER_PORT = Pair.of("server.port",9090);

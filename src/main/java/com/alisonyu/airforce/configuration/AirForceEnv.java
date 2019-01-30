@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.Properties;
 
 /**
+ * 配置文件的优先级
+ * 命令行参数 > System.getProperties() > 环境变量 > 代码配置 > 配置文件
  * 该类用于读取AirForce应用的配置文件的配置项
  * @author yuzhiyi
  * @date 2018/9/17 15:06
@@ -120,6 +122,7 @@ public class AirForceEnv {
 	}
 
 
+	@Deprecated
 	public static <V> V getConfig(Pair<String,V> pair,Class<V> type){
 		return getConfig(pair.getKey(),type,pair.getValue());
 	}

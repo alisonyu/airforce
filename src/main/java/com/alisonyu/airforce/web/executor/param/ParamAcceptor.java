@@ -18,7 +18,7 @@ import java.util.function.Function;
  * @author yuzhiyi
  * @date 2018/9/27 14:17
  */
-class ParamAcceptor {
+public class ParamAcceptor {
 
 	/**
 	 * 接受ParamMeta和当前请求的上下文，然后返回对应元素的值
@@ -26,7 +26,7 @@ class ParamAcceptor {
 	 * @param context   请求上下文
 	 * @return 参数的值
 	 */
-	static Object accept(ParamMeta paramMeta, RoutingContext context){
+	public static Object accept(ParamMeta paramMeta, RoutingContext context){
 		final MultiMap queryParams = context.request().params();
 		final ParamType paramType = paramMeta.getParamType();
 		final Class<?> paramJavaType = paramMeta.getType();
@@ -45,6 +45,10 @@ class ParamAcceptor {
 			//如果参数不是@BodyParam，那么就根据不同类型获取相应的输入值
 			else{
 				in = getInputValue(paramMeta, context);
+				//检验参数是否存在
+				if (in == null && paramMeta.isRequired()){
+					throw new IllegalArgumentException(paramMeta.getName() + "is required");
+				}
 				in = in == null ? paramMeta.getDefaultValue() : in;
 			}
 			out = getValue(paramMeta,in);
@@ -58,7 +62,7 @@ class ParamAcceptor {
 	 * @param in 输入值
 	 * @return 结果值
 	 */
-	static Object getValue(ParamMeta paramMeta, Object in){
+	public static Object getValue(ParamMeta paramMeta, Object in){
 		Object out;
 		final ParamType paramType = paramMeta.getParamType();
 		//1、处理空输入,让他等于默认值

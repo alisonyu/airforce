@@ -2,7 +2,7 @@ package com.alisonyu.airforce.microservice.consumer;
 
 import com.alisonyu.airforce.microservice.utils.MethodNameUtils;
 import com.alisonyu.airforce.microservice.utils.ServiceMessageDeliveryOptions;
-import com.alisonyu.airforce.common.tool.AsyncHelper;
+import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.google.common.collect.Lists;
 import io.reactivex.Flowable;
 import io.vertx.circuitbreaker.CircuitBreaker;

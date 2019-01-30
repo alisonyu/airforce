@@ -27,12 +27,16 @@ public class ParamMeta {
 	 * 默认值
 	 */
 	private String defaultValue;
+	/**
+	 * 是否必传
+	 */
+	private boolean required = true;
 
-
-	public ParamMeta(String name,Class<?> type,String defaultValue){
+	public ParamMeta(String name,Class<?> type,String defaultValue,boolean required){
 		this.name = name;
 		this.type = type;
 		this.defaultValue = defaultValue;
+		this.required = required;
 	}
 
 
@@ -66,29 +70,26 @@ public class ParamMeta {
 		this.paramType = paramType;
 	}
 
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
+	public boolean isRequired() {
+		return required;
+	}
+
+	public void setRequired(boolean required) {
+		this.required = required;
+	}
+
 	@Override
 	public String toString() {
 		return "ParamMeta{" +
 				"name='" + name + '\'' +
 				", type=" + type +
 				", paramType=" + paramType +
-				", defaultValue=" + defaultValue +
+				", defaultValue='" + defaultValue + '\'' +
+				", required=" + required +
 				'}';
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		ParamMeta paramMeta = (ParamMeta) o;
-		return Objects.equals(name, paramMeta.name) &&
-				Objects.equals(type, paramMeta.type) &&
-				paramType == paramMeta.paramType &&
-				Objects.equals(defaultValue, paramMeta.defaultValue);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(name, type, paramType, defaultValue);
 	}
 }

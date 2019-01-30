@@ -12,6 +12,7 @@ import com.alisonyu.airforce.web.anno.Sync;
 import com.alisonyu.airforce.web.executor.param.ParamMeta;
 import com.alisonyu.airforce.common.tool.instance.Anno;
 import com.alisonyu.airforce.common.tool.instance.Reflect;
+import com.alisonyu.airforce.web.executor.param.ParamMetaFactory;
 import io.reactivex.Flowable;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
  */
 public class RouteMeta {
 
-	Logger logger = LoggerFactory.getLogger(RouteMeta.class);
+	private static Logger logger = LoggerFactory.getLogger(RouteMeta.class);
 
 	/**
 	 * 挂载的路径
@@ -89,6 +90,7 @@ public class RouteMeta {
 				.filter(annotation -> annotation.annotationType().isAnnotationPresent(javax.ws.rs.HttpMethod.class))
 				.findFirst()
 				.map(Annotation::annotationType)
+				// todo 与HttpMethod一一对应
 				.ifPresent(anno-> this.httpMethod = Functions.match(anno,
 						Case.of(GET.class,()-> io.vertx.core.http.HttpMethod.GET ),
 						Case.of(POST.class,()->io.vertx.core.http.HttpMethod.POST),
@@ -96,6 +98,10 @@ public class RouteMeta {
 						Case.of(DELETE.class,()->io.vertx.core.http.HttpMethod.DELETE)));
 	}
 
+	/**
+	 * 推断调用模式，一般是使用异步ASYNC调用模式
+	 * @param method
+	 */
 	private void initMode(Method method){
 		Annotation anno = method.getAnnotation(Sync.class);
 		Class<?> returnType = method.getReturnType();
@@ -114,45 +120,12 @@ public class RouteMeta {
 	}
 
 	private void initParamMetas(Method method){
-		Class<?>[] paramTypes = method.getParameterTypes();
-		Annotation[][] paramAnnos = method.getParameterAnnotations();
-		Parameter[] parameters = method.getParameters();
-		this.paramMetas = new ParamMeta[paramTypes.length];
-		for (int idx = 0;idx < paramTypes.length; idx++){
-
-			Class<?> type = paramTypes[idx];
-			Annotation[] annos = paramAnnos[idx];
-			List<Class<? extends Annotation>> annoTypes = Arrays.stream(annos).map(Annotation::annotationType).collect(Collectors.toList());
-			Parameter parameter = parameters[idx];
-			String name;
-			String defaultValue;
-
-			//确定ParamType
-			ParamType paramType = Functions.matchAny(annoTypes,ParamType.QUERY_PARAM,
-					Case.of(QueryParam.class,(t)->  ParamType.QUERY_PARAM),
-					Case.of(FormParam.class,(t)-> ParamType.FORM_PARAM),
-					Case.of(CookieParam.class,(t)->ParamType.COOKIE_PARAM),
-					Case.of(HeaderParam.class,(t)->ParamType.HEADER_PARAM),
-					Case.of(PathParam.class,(t)->ParamType.PATH_PARAM),
-					Case.of(BodyParam.class,(t)-> ParamType.BODY_PARAM),
-					Case.of(SessionParam.class,(t)-> ParamType.SESSION_PARAM));
-
-			//确定参数名和defaultValue
-			name = Anno.getAnnotationValue(parameter,"value",null,
-					QueryParam.class,
-					FormParam.class,
-					CookieParam.class,
-					HeaderParam.class,
-					PathParam.class,
-					SessionParam.class);
-			defaultValue = Anno.getAnnotationValue(parameter,"value",null,DefaultValue.class);
-
-			ParamMeta meta = new ParamMeta(name,type,defaultValue);
-			meta.setParamType(paramType);
-			this.paramMetas[idx] = meta;
-		}
+		this.paramMetas = ParamMetaFactory.getParamMeta(method);
 	}
 
+	/**
+	 * Rest路由路径
+	 */
 	private void initPath(String rootPath,Method method){
 		String subPath = method.isAnnotationPresent(Path.class) ? method.getAnnotation(Path.class).value() : Strings.EMPTY;
 		rootPath = rootPath.startsWith(Strings.SLASH) ? rootPath : Strings.SLASH + rootPath;
@@ -162,12 +135,17 @@ public class RouteMeta {
 		this.path = rootPath + Strings.SLASH + subPath;
 	}
 
+	/**
+	 * 根据返回类型推断content-type
+	 * @param method
+	 */
 	private void initProduceType(Method method){
 		Class<?> returnType = method.getReturnType();
-		if (returnType.isAssignableFrom(Future.class)){
+		if (returnType.isAssignableFrom(Future.class) || returnType.isAssignableFrom(Flowable.class)){
 			returnType =  Reflect.getClass(Reflect.getBaseType(method.getGenericReturnType()).getTypeName());
 		}
-		String produceType = Anno.getAnnotationValue(method,"value",null,Produces.class);
+		String[] produceTypes = (String[])Anno.getAnnotationValue(method,"value",null,Produces.class);
+		this.produceType = (produceTypes == null || (produceTypes.length > 0 && produceTypes[0] == null)) ? null :  produceTypes[0];
 		if (produceType == null){
 			//JsonObject,JsonArray,Map,List,Array => ContentType.Json
 			if (returnType == JsonObject.class || returnType == JsonArray.class || Map.class.isAssignableFrom(returnType) || List.class.isAssignableFrom(returnType) || returnType.isArray()){
@@ -177,7 +155,6 @@ public class RouteMeta {
 			else if (Number.class.isAssignableFrom(returnType) || String.class.isAssignableFrom(returnType)){
 				produceType = ContentTypes.TEXT;
 			}
-			//todo modelAndView => Html
 			//other should be JavaBean => Json
 			else{
 				produceType = ContentTypes.JSON;

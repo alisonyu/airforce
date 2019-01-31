@@ -83,7 +83,7 @@ public class AirForceVerticle extends AbstractVerticle {
 
 
 	private void rxRun(RoutingContext ctx,RouteMeta routeMeta){
-        Scheduler scheduler = routeMeta.getMode() == CallMode.ASYNC ? vertxScheduler : blockingScheduler;
+        Scheduler scheduler = routeMeta.getMode() == CallMode.EventLoop ? vertxScheduler : blockingScheduler;
 	    //解析参数，并将参数作为入口
         Flowable.just(ArgsBuilder.build(routeMeta,ctx))
                 //方法调用

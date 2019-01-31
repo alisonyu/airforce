@@ -2,6 +2,7 @@ package com.alisonyu.airforce.web;
 
 import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
+import com.alisonyu.airforce.web.router.RouterManager;
 import io.vertx.ext.web.Router;
 import io.vertx.reactivex.RxHelper;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -38,10 +39,9 @@ public class HttpServerVerticle extends AbstractVerticle {
 				.onBackpressureDrop(req -> {
 					req.response().setStatusCode(503).end();
 				})
-				//.observeOn(RxHelper.scheduler(vertx.getDelegate()),false,bufferSize)
 				.subscribe(req -> {
 					req.resume();
-					router.handle(req.getDelegate());
+					RouterManager.acceptRequest(req.getDelegate());
 				});
 
 		server.listen(port);

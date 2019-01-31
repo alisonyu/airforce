@@ -2,6 +2,7 @@ package com.alisonyu.airforce.web.router;
 
 import com.alisonyu.airforce.common.constant.Strings;
 import com.alisonyu.airforce.core.AirForceVerticle;
+import com.alisonyu.airforce.web.router.mounter.RouterMounter;
 import com.alisonyu.airforce.web.transfer.UnsafeLocalMessageCodec;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
@@ -15,6 +16,7 @@ import javax.ws.rs.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -24,9 +26,13 @@ import java.util.stream.Collectors;
  */
 public class DispatcherRouter {
 
+	public static final Integer DISPATCHER_INIT_ORDER = 1000000;
+
 	private static Logger logger = LoggerFactory.getLogger(DispatcherRouter.class);
 
 	private static ConcurrentHashMap<Class<?>,Boolean> airforceClassSet = new ConcurrentHashMap<>();
+
+	private static AtomicInteger dispatcherOrders = new AtomicInteger(DISPATCHER_INIT_ORDER);
 
 	private static final DeliveryOptions DELIVERY_OPTIONS = new DeliveryOptions().setCodecName(UnsafeLocalMessageCodec.class.getName());
 
@@ -43,9 +49,14 @@ public class DispatcherRouter {
 					routeMetas.forEach(routeMeta -> logger.info(routeMeta.toString()));
 					//绑定路由,派发到EventBus中执行
 					routeMetas.forEach(routeMeta -> {
-						RouterManager.mountRouter(router -> {
-							router.route(routeMeta.getHttpMethod(), routeMeta.getPath())
-									.handler(ctx -> dispatchToEventBus(eventBus, routeMeta, ctx));
+						RouterManager.mountRouter(new RouterMounter() {
+							@Override
+							public void mount(Router router) {
+								router.route(routeMeta.getHttpMethod(), routeMeta.getPath())
+										.order(dispatcherOrders.incrementAndGet())
+										.handler(ctx -> dispatchToEventBus(eventBus, routeMeta, ctx));
+							}
+
 						});
 					});
 					return true;

@@ -1,4 +1,4 @@
-package com.alisonyu.airforce.web.router;
+package com.alisonyu.airforce.web.router.mounter;
 
 import io.vertx.ext.web.Router;
 
@@ -10,5 +10,6 @@ import io.vertx.ext.web.Router;
 public interface RouterMounter {
 
 	void mount(Router router);
+
 
 }

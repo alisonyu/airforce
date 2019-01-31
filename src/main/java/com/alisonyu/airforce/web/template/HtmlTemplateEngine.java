@@ -1,13 +1,16 @@
 package com.alisonyu.airforce.web.template;
 
+import com.alisonyu.airforce.common.tool.async.AsyncResultHelper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.AsyncFile;
+import io.vertx.core.file.FileSystem;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.templ.TemplateEngine;
+import io.vertx.ext.web.common.template.TemplateEngine;
 import io.vertx.reactivex.FlowableHelper;
 
 import java.util.Map;
@@ -20,31 +23,33 @@ import java.util.Map;
 public class HtmlTemplateEngine implements TemplateEngine {
 
     private OpenOptions openOptions = new OpenOptions();
+    private FileSystem fileSystem;
 
-    @Override
-    public void render(RoutingContext context, String templateDirectory, String templateFileName, Handler<AsyncResult<Buffer>> handler) {
-        String filePath = templateDirectory + "/" + templateFileName;
-        HttpServerResponse resp = context.response();
-        resp.putHeader("content-type","text/html");
-        resp.setChunked(true);
-        context.vertx().fileSystem()
-                .open(filePath,openOptions,res->{
-                    if (res.succeeded()){
-                        AsyncFile asyncFile =  res.result();
-                        FlowableHelper.toFlowable(asyncFile)
-                                .doOnComplete(()->{
-                                    resp.end();
-                                    asyncFile.close();
-                                })
-                                .subscribe(resp::write);
-                    }
-                });
-
+    public HtmlTemplateEngine(Vertx vertx){
+        fileSystem = vertx.fileSystem();
     }
 
 
     @Override
     public void render(Map<String, Object> map, String s, Handler<AsyncResult<Buffer>> handler) {
-        //todo
+        final String filePath =  s;
+        fileSystem
+            .open(filePath,openOptions,res->{
+                if (res.succeeded()){
+                    AsyncFile asyncFile =  res.result();
+                    asyncFile.handler(buffer -> {
+                        handler.handle(AsyncResultHelper.success(buffer));
+                    });
+                }else{
+                    handler.handle(AsyncResultHelper.fail(res.cause()));
+                }
+            });
     }
+
+    @Override
+    public boolean isCachingEnabled() {
+        return false;
+    }
+
+
 }

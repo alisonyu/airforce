@@ -1,0 +1,12 @@
+@startuml
+
+interface TemplateEngine
+
+class TemplateEngineManager{
+     void registerTemplate(engine,fileType);
+     Flowable<Buffer> render(modelView);
+}
+
+TemplateEngine  --* "1" TemplateEngineManager : 注册
+
+@enduml

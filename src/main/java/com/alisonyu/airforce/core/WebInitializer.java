@@ -3,6 +3,9 @@ package com.alisonyu.airforce.core;
 import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.web.HttpServerVerticle;
+import com.alisonyu.airforce.web.router.mounter.RouterMounter;
+import com.alisonyu.airforce.web.router.mounter.StaticRouteMounter;
+import com.alisonyu.airforce.web.router.mounter.WebRouteMounter;
 import com.alisonyu.airforce.web.template.HtmlTemplateEngine;
 import com.alisonyu.airforce.web.router.*;
 import com.alisonyu.airforce.common.tool.async.AsyncHelper;
@@ -52,7 +55,7 @@ public class WebInitializer {
             router.
                 routeWithRegex(".+\\.html")
                 .order(Integer.MAX_VALUE)
-                .blockingHandler(new TemplateHandlerImpl(new HtmlTemplateEngine(),"template","text/html"));
+                .blockingHandler(new TemplateHandlerImpl(new HtmlTemplateEngine(vertx),"template","text/html"));
         });
         //4、挂载其他Mounter
         routerMounters.forEach(mounter -> RouterManager.mountRouter(mounter));
@@ -93,7 +96,7 @@ public class WebInitializer {
     public void init(){
         initRouterManager(this.routerMounters);
         deployRestVerticle(this.restVerticleClazz,this.factory);
-        startHttpServer(vertx,this.routerManager.getRouter());
+        startHttpServer(vertx,RouterManager.getRouter());
     }
 
 

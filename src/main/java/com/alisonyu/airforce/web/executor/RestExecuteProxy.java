@@ -10,15 +10,12 @@ import com.alisonyu.airforce.web.router.RouteMeta;
 import com.alisonyu.airforce.web.router.RouteMetaManager;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.reactivex.RxHelper;
-import org.reactivestreams.Publisher;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -63,7 +60,7 @@ public class RestExecuteProxy {
     }
 
     private void execute(RoutingContext ctx,RouteMeta routeMeta){
-        Scheduler scheduler = routeMeta.getMode() == CallMode.ASYNC ? vertxScheduler : blockingScheduler;
+        Scheduler scheduler = routeMeta.getMode() == CallMode.EventLoop ? vertxScheduler : blockingScheduler;
         MethodAsyncExecutor methodAsyncExecutor = getAsyncExecutor(routeMeta.getProxyMethod());
 
         final HttpServerResponse response = ctx.response();
@@ -94,6 +91,7 @@ public class RestExecuteProxy {
        });
     }
 
+    //todo unregister
     public void unRegister(){
 
     }

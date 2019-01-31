@@ -109,6 +109,7 @@ public class AirForceEnv {
 		}
 		Object in = getConfigValue(expr);
 		in = in != null? in : defaultValue;
+		//todo 支持数组
 		return Instance.cast(in,type,typeClazz);
 	}
 

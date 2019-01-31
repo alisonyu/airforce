@@ -4,10 +4,7 @@ import com.alisonyu.airforce.common.tool.functional.Case;
 import com.alisonyu.airforce.common.tool.functional.Functions;
 import com.alisonyu.airforce.web.constant.CallMode;
 import com.alisonyu.airforce.web.constant.http.ContentTypes;
-import com.alisonyu.airforce.web.constant.ParamType;
 import com.alisonyu.airforce.common.constant.Strings;
-import com.alisonyu.airforce.web.anno.BodyParam;
-import com.alisonyu.airforce.web.anno.SessionParam;
 import com.alisonyu.airforce.web.anno.Sync;
 import com.alisonyu.airforce.web.executor.param.ParamMeta;
 import com.alisonyu.airforce.common.tool.instance.Anno;
@@ -23,9 +20,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Rest接口方法元信息
@@ -90,33 +85,24 @@ public class RouteMeta {
 				.filter(annotation -> annotation.annotationType().isAnnotationPresent(javax.ws.rs.HttpMethod.class))
 				.findFirst()
 				.map(Annotation::annotationType)
-				// todo 与HttpMethod一一对应
 				.ifPresent(anno-> this.httpMethod = Functions.match(anno,
 						Case.of(GET.class,()-> io.vertx.core.http.HttpMethod.GET ),
 						Case.of(POST.class,()->io.vertx.core.http.HttpMethod.POST),
 						Case.of(PUT.class,()-> io.vertx.core.http.HttpMethod.PUT),
-						Case.of(DELETE.class,()->io.vertx.core.http.HttpMethod.DELETE)));
+						Case.of(DELETE.class,()->io.vertx.core.http.HttpMethod.DELETE),
+						Case.of(OPTIONS.class,()-> io.vertx.core.http.HttpMethod.OPTIONS),
+						Case.of(HEAD.class,()-> io.vertx.core.http.HttpMethod.HEAD)
+						));
 	}
 
 	/**
-	 * 推断调用模式，一般是使用异步ASYNC调用模式
+	 * 推断调用模式，一般是在EventLoop上执行操作
 	 * @param method
 	 */
 	private void initMode(Method method){
 		Annotation anno = method.getAnnotation(Sync.class);
 		Class<?> returnType = method.getReturnType();
-		if (Flowable.class.isAssignableFrom(returnType) || Future.class.isAssignableFrom(returnType)) {
-			this.mode = anno == null ? CallMode.ASYNC : CallMode.SYNC;
-		}
-		//如果非 Flowable或者Future 返回类型的 并且没有@SYNC，那么报错
-		else{
-			if (anno == null){
-				logger.error("{} should be run in sync,please use @Sync",method.toGenericString());
-				throw new IllegalArgumentException();
-			}else{
-				this.mode = CallMode.SYNC;
-			}
-		}
+		this.mode = anno == null ? CallMode.EventLoop : CallMode.Worker;
 	}
 
 	private void initParamMetas(Method method){

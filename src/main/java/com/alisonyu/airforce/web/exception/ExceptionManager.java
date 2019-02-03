@@ -44,8 +44,8 @@ public class ExceptionManager {
 	}
 
 
-	public static void registerExceptionHandler(ExceptionHandler exceptionHandler){
-		exceptionHandler.conform().forEach(type -> exceptionHandlers.put(type,exceptionHandler));
+	public static void registerExceptionHandler(ExceptionHandler<? extends Object> exceptionHandler){
+		exceptionHandler.conform().forEach(type -> exceptionHandlers.put((Class<? extends Throwable>) type,exceptionHandler));
 	}
 
 

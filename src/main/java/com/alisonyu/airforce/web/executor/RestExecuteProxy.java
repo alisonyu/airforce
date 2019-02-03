@@ -8,6 +8,8 @@ import com.alisonyu.airforce.web.exception.ExceptionManager;
 import com.alisonyu.airforce.web.router.DispatcherRouter;
 import com.alisonyu.airforce.web.router.RouteMeta;
 import com.alisonyu.airforce.web.router.RouteMetaManager;
+import com.alisonyu.airforce.web.template.ModelView;
+import com.alisonyu.airforce.web.template.TemplateEngineManager;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
 import io.vertx.core.Vertx;
@@ -29,6 +31,7 @@ public class RestExecuteProxy {
     private Vertx vertx;
     private Scheduler vertxScheduler;
     private Scheduler blockingScheduler;
+    //todo Map<Method,Function<Object[],Flowable<Object>>> asyncExecutorMap
     private Map<Method, MethodAsyncExecutor> asyncExecutorMap = new ConcurrentHashMap<>();
     private List<MessageConsumer> messageConsumers = new ArrayList<>();
 
@@ -46,28 +49,30 @@ public class RestExecuteProxy {
     private void mountRequestMethodToEventBus(){
         List<RouteMeta> routeMetas = RouteMetaManager.getRouteMetas(proxyInstance.getClass());
         EventBus eb = vertx.eventBus();
-
         routeMetas.forEach(routeMeta -> registerMethodToEventBus(routeMeta,eb) );
-
     }
 
     private MessageConsumer<RoutingContext> registerMethodToEventBus(RouteMeta routeMeta, EventBus eb){
         String dispatcherAddress = DispatcherRouter.getDispatcherAddress(routeMeta.getHttpMethod(),routeMeta.getPath());
+        //todo 改为rxjava的形式
         return eb.<RoutingContext>localConsumer(dispatcherAddress,event -> {
             RoutingContext routingContext = event.body();
+            //todo 类为资源做限速，decorator该方法
             execute(routingContext,routeMeta);
         });
     }
 
     private void execute(RoutingContext ctx,RouteMeta routeMeta){
+
         Scheduler scheduler = routeMeta.getMode() == CallMode.EventLoop ? vertxScheduler : blockingScheduler;
         MethodAsyncExecutor methodAsyncExecutor = getAsyncExecutor(routeMeta.getProxyMethod());
 
         final HttpServerResponse response = ctx.response();
         response.putHeader(Headers.CONTENT_TYPE,routeMeta.getProduceType());
         response.setChunked(true);
+        //todo 方法级别限速入口，使用operator进行限速
         //解析参数，并将参数作为入口
-        Flowable.just(ArgsBuilder.build(routeMeta,ctx))
+        Flowable.fromCallable(()-> ArgsBuilder.build(routeMeta,ctx))
                 //方法调用
                 .flatMap(args -> methodAsyncExecutor.invoke(args))
                 .onErrorReturn(t -> ExceptionManager.handleException(routeMeta,ctx,this,t))
@@ -87,7 +92,7 @@ public class RestExecuteProxy {
 
     private MethodAsyncExecutor getAsyncExecutor(Method method){
        return asyncExecutorMap.computeIfAbsent(method,key-> {
-           return new MethodAsyncExecutor(proxyInstance,method,vertx.getOrCreateContext());
+           return new MethodExecutor(proxyInstance,method,vertx.getOrCreateContext());
        });
     }
 

@@ -12,10 +12,13 @@ import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.alisonyu.airforce.common.tool.TimeMeter;
 import com.alisonyu.airforce.common.tool.instance.Instance;
 import com.alisonyu.airforce.web.config.StaticConfiguration;
+import com.alisonyu.airforce.web.template.TemplateEngineManager;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.common.template.TemplateEngine;
 import io.vertx.ext.web.handler.impl.TemplateHandlerImpl;
+import io.vertx.ext.web.templ.thymeleaf.ThymeleafTemplateEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +64,22 @@ public class WebInitializer {
         routerMounters.forEach(mounter -> RouterManager.mountRouter(mounter));
     }
 
+    public void registerTemplateEngine(Function<Vertx, TemplateEngine> engineFunction,String suffix,boolean isDefualt){
+        TemplateEngine engine = engineFunction.apply(vertx);
+        registerTemplateEngine(engineFunction, suffix, isDefualt);
+    }
+
+    public void registerTemplateEngine(TemplateEngine engine,String suffix,boolean isDefault){
+        TemplateEngineManager templateEngineManager = TemplateEngineManager.getInstance();
+        templateEngineManager.registerTemplate(engine, suffix, isDefault);
+    }
+
+    private void initTemplateEngine(){
+        TemplateEngineManager templateEngineManager = TemplateEngineManager.getInstance();
+        //templateEngineManager.registerTemplate(new HtmlTemplateEngine(vertx),"html",false);
+        templateEngineManager.registerTemplate(ThymeleafTemplateEngine.create(vertx),".html",true);
+    }
+
     private void deployRestVerticle(Set<Class<? extends AirForceVerticle>> restVerticleClazz,
                                    Function<Class<? extends AirForceVerticle>, AirForceVerticle> factory){
         isWeb = ! restVerticleClazz.isEmpty();
@@ -95,6 +114,7 @@ public class WebInitializer {
 
     public void init(){
         initRouterManager(this.routerMounters);
+        initTemplateEngine();
         deployRestVerticle(this.restVerticleClazz,this.factory);
         startHttpServer(vertx,RouterManager.getRouter());
     }

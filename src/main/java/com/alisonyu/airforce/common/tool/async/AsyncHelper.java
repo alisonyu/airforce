@@ -36,10 +36,24 @@ public class AsyncHelper {
             future.setHandler(as -> {
                 if (as.succeeded()){
                     publisher.onNext(as.result());
+                    publisher.onComplete();
                 }else{
                     publisher.onError(as.cause());
                 }
             });
+        });
+    }
+
+    public static <T> Flowable<T> fromAsyncResult(Consumer<Handler<AsyncResult<T>>> consumer){
+        return Flowable.fromPublisher(publisher -> {
+           consumer.accept(as -> {
+               if (as.succeeded()){
+                   publisher.onNext(as.result());
+                   publisher.onComplete();
+               }else{
+                   publisher.onError(as.cause());
+               }
+           });
         });
     }
 

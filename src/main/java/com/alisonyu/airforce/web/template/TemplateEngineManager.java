@@ -6,10 +6,20 @@ import io.vertx.ext.web.common.template.TemplateEngine;
 
 public interface TemplateEngineManager {
 
-    void registerTemplate(Class<? extends TemplateEngine> engine,String fileType);
+    TemplateEngineManager instance = new TemplateEngineManagerImpl();
 
-    void registerTemplate(TemplateEngine engine,String fileType);
+    /**
+     * 注册渲染模板处理器
+     * @param engine 处理器
+     * @param suffix 文件后缀，可空
+     * @param isDefault 是否是默认处理器
+     */
+    void registerTemplate(TemplateEngine engine,String suffix,boolean isDefault);
 
     Flowable<Buffer> render(ModelView modelView);
+
+    static TemplateEngineManager getInstance(){
+        return instance;
+    }
 
 }

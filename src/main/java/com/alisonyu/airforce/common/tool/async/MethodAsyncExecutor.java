@@ -14,6 +14,7 @@ import java.lang.reflect.Method;
  * thread safe async reflect method call
  * the result will be represented to Flowable
  */
+//todo 改成函数式接口
 public class MethodAsyncExecutor {
 
     private Method method;

@@ -5,13 +5,13 @@ import io.vertx.ext.web.common.template.TemplateEngine;
 
 public class ModelView {
 
-    private String templateName;
+    private String fileName;
     private Class<? extends TemplateEngine> engine;
     private JsonObject data;
 
 
     public ModelView templateName(String s){
-        this.templateName = s;
+        this.fileName = s;
         return this;
     }
 
@@ -25,8 +25,12 @@ public class ModelView {
         return this;
     }
 
-    public String getTemplateName() {
-        return templateName;
+    public String getFileName() {
+        return fileName;
+    }
+
+    public Class<? extends TemplateEngine> getEngine() {
+        return engine;
     }
 
     public JsonObject getData() {

@@ -10,6 +10,7 @@ import com.alisonyu.airforce.web.executor.param.ParamMeta;
 import com.alisonyu.airforce.common.tool.instance.Anno;
 import com.alisonyu.airforce.common.tool.instance.Reflect;
 import com.alisonyu.airforce.web.executor.param.ParamMetaFactory;
+import com.alisonyu.airforce.web.template.ModelView;
 import io.reactivex.Flowable;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
@@ -23,6 +24,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
+ * todo 将方法作为另外的源信息抽出来
  * Rest接口方法元信息
  * @author yuzhiyi
  * @date 2018/9/12 10:47
@@ -129,6 +131,10 @@ public class RouteMeta {
 		Class<?> returnType = method.getReturnType();
 		if (returnType.isAssignableFrom(Future.class) || returnType.isAssignableFrom(Flowable.class)){
 			returnType =  Reflect.getClass(Reflect.getBaseType(method.getGenericReturnType()).getTypeName());
+		}
+		if (returnType.isAssignableFrom(ModelView.class)){
+			produceType = ContentTypes.HTML;
+			return;
 		}
 		String[] produceTypes = (String[])Anno.getAnnotationValue(method,"value",null,Produces.class);
 		this.produceType = (produceTypes == null || (produceTypes.length > 0 && produceTypes[0] == null)) ? null :  produceTypes[0];

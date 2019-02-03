@@ -5,6 +5,8 @@ import com.alisonyu.airforce.microservice.utils.ServiceMessageDeliveryOptions;
 import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.google.common.collect.Lists;
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Future;
@@ -45,6 +47,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
         CircuitBreaker circuitBreaker = getCircuitBreaker(method);
         String address = MethodNameUtils.getName(serviceClass,method,group,version);
         Class<? > returnType = method.getReturnType();
+        //todo 将方法调用变为AsyncMethodExecutor
         Flowable<Object> flowable = Flowable.fromPublisher(publisher -> {
             //executor with circuitBreaker
             circuitBreaker.executeWithFallback(future -> {
@@ -61,6 +64,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                     }
                 });
             },v -> {
+                //todo do log
                 logger.error("triger fallback");
                 if (this.fallBackInstance == null){
                     throw new RuntimeException(v);

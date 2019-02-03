@@ -5,6 +5,7 @@ import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.core.banner.Banner;
 import com.alisonyu.airforce.web.exception.ExceptionHandler;
 import com.alisonyu.airforce.web.router.mounter.RouterMounter;
+import com.alisonyu.airforce.web.template.TemplateEngineManager;
 import com.alisonyu.airforce.web.transfer.UnsafeLocalMessageCodec;
 import com.alisonyu.airforce.microservice.utils.ServiceMessageCodec;
 import com.alisonyu.airforce.common.tool.async.AsyncHelper;
@@ -14,6 +15,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.ext.web.common.template.TemplateEngine;
 import io.vertx.micrometer.MicrometerMetricsOptions;
 import io.vertx.micrometer.VertxInfluxDbOptions;
 import io.vertx.reactivex.RxHelper;
@@ -47,6 +49,7 @@ public class AirForceBuilder {
     private ServiceInitializer serviceInitializer;
     private AtomicBoolean inited = new AtomicBoolean(false);
 
+    //todo 先初始化资源，再进行操作
     public static AirForceBuilder build(){
         AirForceBuilder builder = new AirForceBuilder();
         return builder;
@@ -74,14 +77,14 @@ public class AirForceBuilder {
 //                new DropwizardMetricsOptions().setJmxEnabled(true).setJmxDomain("airforce")
 //                    );
 
-            vertxOptions.setMetricsOptions(
-                    new MicrometerMetricsOptions()
-                    .setInfluxDbOptions(new VertxInfluxDbOptions()
-                        .setEnabled(true)
-                        .setUri("http://localhost:8086")
-                        .setDb("airforce")
-                    ).setEnabled(true)
-            );
+//            vertxOptions.setMetricsOptions(
+//                    new MicrometerMetricsOptions()
+//                    .setInfluxDbOptions(new VertxInfluxDbOptions()
+//                        .setEnabled(true)
+//                        .setUri("http://localhost:8086")
+//                        .setDb("airforce")
+//                    ).setEnabled(true)
+//            );
 
             // init cluster
             if (this.clusterManager != null){
@@ -157,6 +160,11 @@ public class AirForceBuilder {
      */
     public AirForceBuilder restExceptionHandler(List<ExceptionHandler> exceptionHandlers){
         this.exceptionHandlers = exceptionHandlers;
+        return this;
+    }
+
+    public AirForceBuilder template(Function<Vertx, TemplateEngine> engineFunction,String suffix,boolean isDefault){
+        TemplateEngineManager.getInstance().registerTemplate(engineFunction.apply(vertx),suffix,isDefault);
         return this;
     }
 

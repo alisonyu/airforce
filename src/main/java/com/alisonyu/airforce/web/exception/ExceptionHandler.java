@@ -5,7 +5,7 @@ import io.vertx.ext.web.RoutingContext;
 
 import java.util.List;
 
-public interface ExceptionHandler {
+public interface ExceptionHandler<T extends Object> {
 
 	/**
 	 * 表示该异常处理器将处理哪些异常类
@@ -19,6 +19,6 @@ public interface ExceptionHandler {
 	 * @param e			具体异常
 	 * @return			返回一个具体的值，该值将序列化返回给请求端
 	 */
-	Object handle(RouteMeta routeMeta, RoutingContext context, Throwable e);
+	T handle(RouteMeta routeMeta, RoutingContext context, Throwable e);
 
 }

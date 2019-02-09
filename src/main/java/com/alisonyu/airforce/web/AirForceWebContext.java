@@ -7,6 +7,7 @@ import com.alisonyu.airforce.web.exception.ExceptionHandler;
 import com.alisonyu.airforce.web.exception.ExceptionManager;
 import com.alisonyu.airforce.web.router.RouterManager;
 import com.alisonyu.airforce.web.router.mounter.RouterMounter;
+import com.alisonyu.airforce.web.router.mounter.SessionMounter;
 import com.alisonyu.airforce.web.router.mounter.StaticRouteMounter;
 import com.alisonyu.airforce.web.router.mounter.WebRouteMounter;
 import com.alisonyu.airforce.web.template.TemplateEngineManager;
@@ -14,8 +15,10 @@ import com.alisonyu.airforce.web.template.TemplateRegistry;
 import com.google.common.collect.Lists;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.common.template.TemplateEngine;
+import io.vertx.ext.web.sstore.SessionStore;
 import io.vertx.ext.web.templ.thymeleaf.ThymeleafTemplateEngine;
 
 import java.util.List;
@@ -28,7 +31,9 @@ public class AirForceWebContext {
                               List<RouterMounter> routerMounters,
                               List<TemplateRegistry> templateRegistries,
                               List<ExceptionHandler> exceptionHandlers,
-                              boolean embbeddedHttpServer){
+                              boolean embbeddedHttpServer,
+                              SessionStore sessionStore,
+                              HttpServerOptions httpServerOptions){
 
         //init router Manager
         if (router != null){
@@ -43,6 +48,10 @@ public class AirForceWebContext {
 
         if (routerMounters != null){
             routerMounters.forEach(routerMounter ->  RouterManager.mountRouter(routerMounter));
+        }
+
+        if (sessionStore != null){
+            RouterManager.mountRouter(new SessionMounter(sessionStore));
         }
 
         if (exceptionHandlers != null){
@@ -65,6 +74,9 @@ public class AirForceWebContext {
                return new HttpServerVerticle();
            } );
         }
+
+
+
     }
 
 

@@ -102,7 +102,7 @@ public class WebInitializer {
         TimeMeter timeMeter = new TimeMeter();
         timeMeter.start();
         Integer port = AirForceEnv.getConfig(AirForceDefaultConfig.SERVER_PORT,Integer.class);
-        HttpServerVerticle httpServerVerticle = new HttpServerVerticle(router,port);
+        HttpServerVerticle httpServerVerticle = new HttpServerVerticle();
         try{
             String res = AsyncHelper.<String>blockingGet(handler -> vertx.deployVerticle(httpServerVerticle,handler));
             logger.info("server listen at port: {}! cost {}ms",port,timeMeter.end());

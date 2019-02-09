@@ -10,11 +10,14 @@ import com.alisonyu.airforce.web.router.mounter.RouterMounter;
 import com.alisonyu.airforce.web.template.TemplateRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.sstore.SessionStore;
 import io.vertx.reactivex.RxHelper;
 import org.thymeleaf.context.WebContext;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class AirForceContextBuilder {
 
@@ -26,6 +29,8 @@ public class AirForceContextBuilder {
     private List<TemplateRegistry> templateRegistries;
     private List<Object> services;
     private boolean embedHttpServer = false;
+    private Function<Vertx, SessionStore> sessionStoreFacotry;
+    private HttpServerOptions httpServerOptions;
 
 
     public static AirForceContextBuilder create(){
@@ -59,6 +64,16 @@ public class AirForceContextBuilder {
 
     public AirForceContextBuilder templateEngines(List<TemplateRegistry> templateRegistries){
         this.templateRegistries = templateRegistries;
+        return this;
+    }
+
+    public AirForceContextBuilder session(Function<Vertx, SessionStore> sessionStoreFacotry){
+        this.sessionStoreFacotry = sessionStoreFacotry;
+        return this;
+    }
+
+    public AirForceContextBuilder httpServerOption(HttpServerOptions httpServerOptions){
+        this.httpServerOptions = httpServerOptions;
         return this;
     }
 
@@ -107,7 +122,11 @@ public class AirForceContextBuilder {
         }
 
         //init web
-        AirForceWebContext webContext = new AirForceWebContext(vertx,airForceContext,router,routerMounterList,templateRegistries,exceptionHandlers,embedHttpServer);
+        SessionStore sessionStore = null;
+        if (sessionStoreFacotry != null){
+            sessionStore = sessionStoreFacotry.apply(vertx);
+        }
+        AirForceWebContext webContext = new AirForceWebContext(vertx,airForceContext,router,routerMounterList,templateRegistries,exceptionHandlers,embedHttpServer,sessionStore,httpServerOptions);
 
         airForceContext.start(vertxContext.getVertx());
 

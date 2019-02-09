@@ -1,19 +1,15 @@
 package com.alisonyu.airforce.web;
 
-import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.web.config.HttpServerConfig;
 import com.alisonyu.airforce.web.router.RouterManager;
-import io.vertx.ext.web.Router;
-import io.vertx.reactivex.RxHelper;
-import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.core.http.HttpServerRequest;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.DefaultValue;
-import java.io.InputStream;
 
 /**
  * @author yuzhiyi
@@ -22,30 +18,29 @@ import java.io.InputStream;
 public class HttpServerVerticle extends AbstractVerticle {
 
 	private Logger logger = LoggerFactory.getLogger(HttpServerVerticle.class);
-
-	private Router router;
-	private int port;
-
-	@Deprecated
-	public HttpServerVerticle(Router router,int port){
-		this.router = router;
-		this.port = port;
-	}
+	private HttpServerOptions options;
 
 	public HttpServerVerticle(){
+		this.options = new HttpServerOptions();
 	}
+
+	public HttpServerVerticle(HttpServerOptions options){
+		this.options = options;
+	}
+
 
 	@Override
 	public void start() throws Exception {
-		HttpServer server = vertx.createHttpServer();
+		HttpServer server = vertx.createHttpServer(this.options);
 		int port = AirForceEnv.getConfig(HttpServerConfig.class).getPort();
-		server.getDelegate()
-				.requestHandler(req -> {
-					RouterManager.acceptRequest(req);
+		server.requestHandler(RouterManager::acceptRequest)
+				.listen(port,as->{
+					if (as.succeeded()){
+						logger.info("http server listen at {}",port);
+					}else{
+						logger.error("start http server error",as.cause());
+					}
 				});
-
-		server.listen(port);
-		logger.info("http server listen at {}",port);
 	}
 
 }

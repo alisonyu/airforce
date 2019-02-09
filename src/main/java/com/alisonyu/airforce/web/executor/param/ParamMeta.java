@@ -30,7 +30,7 @@ public class ParamMeta {
 	/**
 	 * 是否必传
 	 */
-	private boolean required = true;
+	private boolean required = false;
 
 	public ParamMeta(String name,Class<?> type,String defaultValue,boolean required){
 		this.name = name;

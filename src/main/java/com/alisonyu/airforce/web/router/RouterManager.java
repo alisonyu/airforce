@@ -19,6 +19,10 @@ public class RouterManager {
 		router = Router.router(vertx);
 	}
 
+	public static synchronized void init(Router router){
+		RouterManager.router = router;
+	}
+
 	public static Router getRouter(){
 		return router;
 	}

@@ -71,6 +71,7 @@ public class RestExecuteProxy {
         response.putHeader(Headers.CONTENT_TYPE,routeMeta.getProduceType());
         response.setChunked(true);
         //todo 方法级别限速入口，使用operator进行限速
+        //todo 考虑返回类型为Null的情况
         //解析参数，并将参数作为入口
         Flowable.fromCallable(()-> ArgsBuilder.build(routeMeta,ctx))
                 //方法调用
@@ -81,8 +82,10 @@ public class RestExecuteProxy {
                 //以上结果根据异步或者同步在不同的模式下选择不同的调度器
                 .subscribeOn(scheduler)
                 //写结束后关闭流
-                .doOnComplete(()-> {
-                    response.end();
+                .doFinally(()-> {
+                    if (!response.ended()){
+                        response.end();
+                    }
                 })
                 //将结果写入到http response中
                 .subscribe(buffer->{

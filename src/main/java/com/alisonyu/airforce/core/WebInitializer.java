@@ -76,7 +76,6 @@ public class WebInitializer {
 
     private void initTemplateEngine(){
         TemplateEngineManager templateEngineManager = TemplateEngineManager.getInstance();
-        //templateEngineManager.registerTemplate(new HtmlTemplateEngine(vertx),"html",false);
         templateEngineManager.registerTemplate(ThymeleafTemplateEngine.create(vertx),".html",true);
     }
 

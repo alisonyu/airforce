@@ -6,12 +6,14 @@ import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.google.common.collect.Lists;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.reactivex.RxHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +32,17 @@ public class ConsumeInvocationHandler implements InvocationHandler {
     private String version;
     private Vertx vertx;
     private CircuitBreakerOptions circuitBreakerOptions;
+    private Scheduler blockingScheduler;
     private final Object fallBackInstance;
     private static Object VOID = new Object();
+
 
     public ConsumeInvocationHandler(Vertx vertx,Class<?> serviceClass,String group,String version,CircuitBreakerOptions circuitBreakerOptions,Object fallbackInstance){
         this.version = version;
         this.serviceClass = serviceClass;
         this.group = group;
         this.vertx = vertx;
+        this.blockingScheduler = RxHelper.blockingScheduler(vertx,false);
         this.fallBackInstance = fallbackInstance;
         this.circuitBreakerOptions = circuitBreakerOptions;
     }
@@ -158,12 +163,13 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                     .subscribe(future::complete);
             return future;
         }
+        //todo 移除同步该分支
         //否则同步获取结果
         else {
             //block result
             AtomicReference<Object> res = new AtomicReference<>();
             flowable
-                    .observeOn(AsyncHelper.getBlockingScheduler())
+                    .observeOn(this.blockingScheduler)
                     .doOnError(e -> {
                         if (e instanceof TimeoutException){
                             logger.error("call {} timeout 3000",method.toGenericString());

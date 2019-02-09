@@ -49,7 +49,7 @@ public class AirForceBuilder {
     private ServiceInitializer serviceInitializer;
     private AtomicBoolean inited = new AtomicBoolean(false);
 
-    //todo 先初始化资源，再进行操作
+    //todo 先初始化资源，再进行操作 !!!
     public static AirForceBuilder build(){
         AirForceBuilder builder = new AirForceBuilder();
         return builder;
@@ -105,6 +105,7 @@ public class AirForceBuilder {
         vertx.eventBus().registerCodec(new UnsafeLocalMessageCodec());
         vertx.eventBus().registerCodec(new ServiceMessageCodec());
         //对AsyncHelper注册Scheduler
+        //todo 移除
         AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertx,false));
 
         long costTime = timeMeter.end();
@@ -251,6 +252,10 @@ public class AirForceBuilder {
                 config.getJsonObject("retry",new JsonObject()).put("maxTimes",zookeeperConfig.getRetryMaxTime());
                 config.getJsonObject("retry",new JsonObject()).put("intervalTimes",zookeeperConfig.getRetryIntervalTime());
             }
+
+
+
+
         }
     }
 

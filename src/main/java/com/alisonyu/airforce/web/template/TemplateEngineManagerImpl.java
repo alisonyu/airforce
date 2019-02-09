@@ -69,6 +69,7 @@ public class TemplateEngineManagerImpl implements TemplateEngineManager {
     }
 
     private Flowable<Buffer> renderInterval(String fileName,JsonObject data,TemplateEngine engine){
+        //check resource existing
         return AsyncHelper.fromAsyncResult(as -> engine.render(data,fileName,as));
     }
 

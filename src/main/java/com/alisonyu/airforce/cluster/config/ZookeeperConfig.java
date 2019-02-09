@@ -9,9 +9,11 @@ import java.util.Arrays;
  * @author yuzhiyi
  * @date 2018/9/21 10:22
  */
-@Configuration(prefix = "zookeeper")
+@Configuration(prefix = "cluster.zookeeper")
 public class ZookeeperConfig {
 
+	@Value("enable")
+	private boolean enable;
 	@Value("hosts")
  	private String[] servers;
 	@Value("rootPath")
@@ -84,11 +86,19 @@ public class ZookeeperConfig {
 		this.connectTimeout = connectTimeout;
 	}
 
+	public boolean isEnable() {
+		return enable;
+	}
+
+	public void setEnable(boolean enable) {
+		this.enable = enable;
+	}
 
 	@Override
 	public String toString() {
 		return "ZookeeperConfig{" +
-				"servers=" + Arrays.toString(servers) +
+				"enable=" + enable +
+				", servers=" + Arrays.toString(servers) +
 				", namespace='" + namespace + '\'' +
 				", retryIntervalSleepTime=" + retryIntervalSleepTime +
 				", retryIntervalTime=" + retryIntervalTime +

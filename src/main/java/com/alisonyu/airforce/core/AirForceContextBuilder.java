@@ -31,6 +31,7 @@ public class AirForceContextBuilder {
     private boolean embedHttpServer = false;
     private Function<Vertx, SessionStore> sessionStoreFacotry;
     private HttpServerOptions httpServerOptions;
+    private String[] args;
 
 
     public static AirForceContextBuilder create(){
@@ -39,6 +40,11 @@ public class AirForceContextBuilder {
 
     public AirForceContextBuilder vertx(Vertx vertx){
         this.vertx = vertx;
+        return this;
+    }
+
+    public AirForceContextBuilder args(String[] args){
+        this.args = args;
         return this;
     }
 
@@ -89,7 +95,9 @@ public class AirForceContextBuilder {
 
     public AirForceContext init(){
 
-        AirForceEnv.init(this.getClass(),null);
+        AirForceEnv.init(this.getClass(),args);
+
+        LogContext.init(args);
 
         AirForceContext airForceContext = new AirForceContext();
 

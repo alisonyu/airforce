@@ -11,8 +11,6 @@ import java.util.stream.Collectors;
 
 public class FileUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
-
 
     public static boolean existFiles(String path){
         File file = new File(path);

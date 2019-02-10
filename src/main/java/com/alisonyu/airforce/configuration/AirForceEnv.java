@@ -28,22 +28,27 @@ public class AirForceEnv {
 	private static Logger logger = LoggerFactory.getLogger(AirForceEnv.class);
 	private static final String DEFAULT_CONFIG_PROPERTIES = "airforce.properties";
 	private static final String CONFIG_FILE_NAME = "/airforce.json";
+	private static final String CONFIG_PATH_KEY = "config.path";
 	private static Class<?> startClass;
 	private static Config  config;
+	private static Config commandLineConfig;
 
 	/**
 	 * 框架内部使用，用户不应该主动调用该方法
 	 */
-	public static void init(Class<?> startClass,String configPath){
+	public static void init(Class<?> startClass,String[] args){
 		AirForceEnv.startClass = startClass;
+		//parse commandLine Config
+		commandLineConfig = new CommandLineConfig(args);
+		//get config path
+		String configPath = getExternalConfig(CONFIG_PATH_KEY);
 		if (configPath!=null){
 			String type = configPath.substring(configPath.lastIndexOf("."));
-			if ("properties".equals(type)){
+			if (".properties".equals(type)){
 				config = getPropertiesConfig(configPath);
-			}else if ("json".equals(type)){
+			}else if (".json".equals(type)){
 				config = getJsonConfig(configPath);
 			}else{
-				logger.error("unknown config type");
 				throw new RuntimeException("unknow config typee");
 			}
 			if (config == null){
@@ -64,19 +69,19 @@ public class AirForceEnv {
 	}
 
 
+	//todo 支持多协议resorce,file,http,https
 	private static Config getPropertiesConfig(String path){
 		if (FileUtils.existResources (path)){
             Properties properties = new Properties();
-            InputStream in  = Thread.currentThread().getContextClassLoader().getResourceAsStream("airforce.properties");
+            InputStream in  = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
             try {
                 properties.load(in);
                 return new PropertiesConfig(properties);
             } catch (IOException e) {
-                logger.error("init config error",e);
                 throw new RuntimeException(e);
             }
         }else{
-		    return null;
+		    throw new RuntimeException(path+" not found");
         }
 	}
 
@@ -113,8 +118,17 @@ public class AirForceEnv {
 		return Instance.cast(in,type,typeClazz);
 	}
 
-	private static String getConfigValue(String expr){
-		return config.getValue(expr);
+	public static String getConfigValue(String expr){
+		String value = getExternalConfig(expr);
+		if (value == null) value = config.getValue(expr);
+		return value;
+	}
+
+	private static String getExternalConfig(String expr){
+		String value = commandLineConfig.getValue(expr);
+		if (value == null) value = System.getProperty(expr);
+		if (value == null) value = System.getenv(expr);
+		return value;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -134,7 +148,8 @@ public class AirForceEnv {
 		Arrays.stream(type.getDeclaredFields())
 				.filter(field -> field.isAnnotationPresent(Value.class))
 				.forEach(field -> {
-					String key = prefix + Strings.DOT + field.getAnnotation(Value.class).value();
+					String processedPrefix = prefix.equals(Strings.EMPTY) ? Strings.EMPTY : prefix + Strings.DOT;
+					String key = processedPrefix + field.getAnnotation(Value.class).value();
 					Object in = getConfig(key,field.getGenericType(),field.getType(),null);
 					if (in != null){
 						Instance.jvmSet(instance,field.getName(),in);
@@ -142,6 +157,10 @@ public class AirForceEnv {
 				});
 		return instance;
 	}
+
+
+
+
 
 
 }

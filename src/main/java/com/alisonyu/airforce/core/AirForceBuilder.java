@@ -217,7 +217,7 @@ public class AirForceBuilder {
         //show banner
         showBanner();
         //init config
-        AirForceEnv.init(startClazz,null);
+        AirForceEnv.init(startClazz,args);
         //init vertx
         this.init();
         //init web and soa service

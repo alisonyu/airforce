@@ -53,6 +53,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
         String address = MethodNameUtils.getName(serviceClass,method,group,version);
         Class<? > returnType = method.getReturnType();
         //todo 将方法调用变为AsyncMethodExecutor
+        //todo 将这段方法抽出来，以实现泛化调用
         Flowable<Object> flowable = Flowable.fromPublisher(publisher -> {
             //executor with circuitBreaker
             circuitBreaker.executeWithFallback(future -> {

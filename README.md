@@ -1,4 +1,12 @@
 # airforce
+### 解决什么问题？
+
+* 希望使用Vertx开发项目，但是希望使用类似Spring Boot的注解式的方式来组织路由
+* 利用Vertx Eventbus，使用类似Dubbo的风格发布和消费服务
+* 希望在Vertx 项目中引入Spring，使用Spring Boot 封装好的组件
+
+
+
 ### 如何安装？
 
 ```shell
@@ -11,7 +19,7 @@ mvn install
 
 ### Quick Start
 
-在你的应用引入依赖
+##### 在你的应用引入依赖
 
 ```xml
 <dependency>
@@ -21,7 +29,7 @@ mvn install
 </dependency>
 ```
 
-编写一个Web接口
+##### 编写一个Web接口
 
 ```java
 public class DemoRestVerticle extends AirForceVerticle {
@@ -52,7 +60,7 @@ public class DemoRestVerticle extends AirForceVerticle {
 
 
 
-在resources下编写配置文件 airforce.properties
+**在resources下编写配置文件 airforce.properties**
 
 ```properties
 app.name=airforce
@@ -61,22 +69,24 @@ server.port=9099
 
 
 
-编写并启动Main函数
+**编写并启动Main函数**
 
 ```java
 public class DemoApplication {
 
     public static void main(String[] args) {
-        AirForceBuilder.build()
-                .airforceVerticles(Sets.newHashSet(DemoRestVerticle.class))
-                .run(DemoApplication.class,args);
+        AirForceContext context = AirForceContextBuilder.create()
+                                    .args(args)
+                                    .emberHttpServer(true)
+                                    .init();
+        context.deployVerticle(()->new DemoRestVerticle(),new DeploymentOptions(),null);
     }
 }
 ```
 
 
 
-测试
+**测试**
 
 ```shell
 curl localhost:9099/hello?name=airforce
@@ -85,83 +95,102 @@ curl localhost:9099/echo?content=airforce
 
 
 
+##### 发布和消费服务
 
+**发布服务**
 
-### AirForceVerticle
+底层是异步执行的，请使用Flowable\<T>或者Future\<T>来表示异步执行的结果
 
-继承AbstractVerticle，提供Rest接口和异步服务的能力
+使用@ServiceProvider来标识这个类是一个服务类
 
-
-
-### 接口风格
-
-Vertx是一个全异步的网络框架，因此无论是服务接口还是Rest接口，需要使用返回Flowable 或者是 Future（Vertx）来表示你的返回结果
-
-
-
-### Web
-
-基于Vertx Web进行封装，使用vertx web来进行路由管理，最后的处理是通过EventBus本地分派到对应的Verticle中执行。
-
-Web接口的注解配置基于JSR311风格
-
-
-
-基本形式
+返回类型可以是基础类型或者用户自定义的类，在这里使用了FST进行序列化和反序列化
 
 ```java
-public class DemoRestVerticle extends AirForceVerticle {
+@ServiceProvider
+public class HelloServiceVerticle extends AirForceVerticle implements HelloService{
 
-    @GET
-    @Path("/hello")
-    public Flowable<String> hello(@QueryParam("name")String name){
-        return Flowable.just("hello "+name);
+    @Override
+    public Flowable<String> hello(String content) {
+        return Flowable.just("hello "+content);
     }
 
-    @GET
-    @Path("/echo")
-    public Future<String> echo(@QueryParam("content")String content){
-        Future<String> future = Future.future();
-        future.complete(content);
-        return future;
+    @Override
+    public Future<String> echo(String content) {
+        Future<String> f = Future.future();
+        f.complete(content);
+        return f;
     }
-
-
-    @GET
-    @Path("/blockingHello")
-    @Sync
-    public String blockingHello(@QueryParam("name")String name){
-        return "hello "+name;
-    }
+    
 }
-
 ```
 
-使用Flowable和Future作为返回值的方法，他会在该Verticle的context上下文执行。
-
-当不使用Flowable和Future的时候，一定要使用@Sync去修饰方法
-
-使用@Sync修饰的方法将会在Vertx的BlockingThreadPool中运行，不推荐使用
 
 
+**消费服务**
+
+使用ConsumerProvider#getConsumer来获取服务代理实例，然后就可以透明化的调用了
+
+消费服务底层是使用Vertx EventBus去实现的
+
+如果是服务的方法返回值是Flowable\<T>形式的，不要使用任何blocking的API,例如blockingFirst，这会将EventLoop的线程阻塞
+
+```java
+public class ConsumerDemo extends AirForceVerticle {
+
+    private HelloService helloService;
+
+    @Override
+    public void start() throws Exception {
+        super.start();
+        this.helloService = ConsumerProvider.getConsumer(vertx,HelloService.class);
+    }
+
+    @GET
+    @Path("hello/hello")
+    public Flowable<String> hello(@QueryParam("content")String content){
+        return helloService.hello(content);
+    }
+
+    @GET
+    @Path("hello/echo")
+    public Future<String> echo(@QueryParam("content")String content){
+        return helloService.echo(content);
+    }
+    
+}
+```
 
 
 
+**编写并启动main函数**
 
+```java
+public class DemoApplication {
 
+    private static Logger logger = LoggerFactory.getLogger(DemoApplication.class);
 
-
-
-
-
-
-
-
-
-
-
-
-
+    public static void main(String[] args) {
+        AirForceContext context = AirForceContextBuilder.create()
+                                    .args(args)
+                                    .emberHttpServer(true)
+                                    .init();
+        
+        context.deployVerticle(()->new HelloServiceVerticle(),new DeploymentOptions().setInstances(4),as ->{
+            if (as.succeeded()){
+                logger.info("helloService deploy successfully!");
+            }else{
+                logger.error("helloService deploy error!",as.cause());
+            }
+        } );
+        context.deployVerticle(()->new ConsumerDemo(),new DeploymentOptions(),as -> {
+            if (as.succeeded()){
+                logger.info("consumer demo depploy successfully!");
+            }else{
+                logger.error("consume demo deploy error!",as.cause());
+            }
+        });
+    }
+```
 
 
 

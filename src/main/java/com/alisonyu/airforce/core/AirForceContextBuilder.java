@@ -3,6 +3,7 @@ package com.alisonyu.airforce.core;
 import com.alisonyu.airforce.cluster.ClusterContext;
 import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.alisonyu.airforce.configuration.AirForceEnv;
+import com.alisonyu.airforce.core.config.VertxConfig;
 import com.alisonyu.airforce.monitor.MonitorContext;
 import com.alisonyu.airforce.web.AirForceWebContext;
 import com.alisonyu.airforce.web.exception.ExceptionHandler;
@@ -111,9 +112,11 @@ public class AirForceContextBuilder {
         if (vertx != null){
             vertxContext = new VertxContext(vertx);
         }else if (vertxOptions != null){
+            VertxConfig vertxConfig = new VertxConfig(vertxOptions,clusterContext,monitorContext);
             vertxContext = new VertxContext(vertxOptions);
         }else{
-            vertxContext = new VertxContext();
+            VertxConfig vertxConfig = new VertxConfig(new VertxOptions(),clusterContext,monitorContext);
+            vertxContext = new VertxContext(vertxConfig.getVertxOptions());
         }
         vertxContext.init();
         vertx  = vertxContext.getVertx();

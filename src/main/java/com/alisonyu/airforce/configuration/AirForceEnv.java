@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -32,6 +33,7 @@ public class AirForceEnv {
 	private static Class<?> startClass;
 	private static Config  config;
 	private static Config commandLineConfig;
+	private static Config systemConfig = new SystemConfig();
 
 	/**
 	 * 框架内部使用，用户不应该主动调用该方法
@@ -125,10 +127,8 @@ public class AirForceEnv {
 	}
 
 	private static String getExternalConfig(String expr){
-		String value = commandLineConfig.getValue(expr);
-		if (value == null) value = System.getProperty(expr);
-		if (value == null) value = System.getenv(expr);
-		return value;
+		return Optional.ofNullable(commandLineConfig.getValue(expr))
+						.orElse(systemConfig.getValue(expr));
 	}
 
 	@SuppressWarnings("unchecked")

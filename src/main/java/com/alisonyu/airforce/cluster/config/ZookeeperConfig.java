@@ -15,7 +15,7 @@ public class ZookeeperConfig {
 	@Value("enable")
 	private boolean enable;
 	@Value("hosts")
- 	private String[] servers;
+ 	private String servers;
 	@Value("rootPath")
 	private String namespace = "io.vertx";
 	@Value("retry.initialSleepTime")
@@ -29,11 +29,11 @@ public class ZookeeperConfig {
 	@Value("connectTimeout")
 	private Integer connectTimeout = 3000;
 
-	public String[] getServers() {
+	public String getServers() {
 		return servers;
 	}
 
-	public void setServers(String[] servers) {
+	public void setServers(String servers) {
 		this.servers = servers;
 	}
 
@@ -98,7 +98,7 @@ public class ZookeeperConfig {
 	public String toString() {
 		return "ZookeeperConfig{" +
 				"enable=" + enable +
-				", servers=" + Arrays.toString(servers) +
+				", servers=" + servers +
 				", namespace='" + namespace + '\'' +
 				", retryIntervalSleepTime=" + retryIntervalSleepTime +
 				", retryIntervalTime=" + retryIntervalTime +

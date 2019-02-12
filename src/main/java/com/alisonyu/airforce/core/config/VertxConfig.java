@@ -32,6 +32,7 @@ public class VertxConfig {
         //if user not define cluster
         if (!vertxOptions.isClustered() && vertxOptions.getClusterManager() == null){
             if (clusterContext.getClusterManager() != null){
+                vertxOptions.setClusterHost(clusterContext.getHost());
                 vertxOptions.setClusterManager(clusterContext.getClusterManager());
             }
         }

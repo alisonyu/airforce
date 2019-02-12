@@ -1,8 +1,17 @@
 package com.alisonyu.airforce.common.tool.io;
 
+import com.alisonyu.airforce.common.tool.ShellHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.stream.Collectors;
 
 /**
  * 与网络相关的工具类
@@ -10,6 +19,8 @@ import java.util.Enumeration;
  * @date 2018/9/21 10:18
  */
 public class Network {
+
+	private static Logger logger = LoggerFactory.getLogger(Network.class);
 
 	public static InetAddress getLocalHostLANAddress()  {
 		try {
@@ -41,6 +52,12 @@ public class Network {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+
+	public static String getContainerIP(){
+		String s = ShellHelper.sh("tail -n 1 /etc/hosts");
+		return s.split("\\s+")[0];
 	}
 
 }

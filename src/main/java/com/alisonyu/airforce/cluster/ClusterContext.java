@@ -1,13 +1,20 @@
 package com.alisonyu.airforce.cluster;
 
 import com.alisonyu.airforce.cluster.config.ZookeeperConfig;
+import com.alisonyu.airforce.common.tool.io.Network;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sun.nio.ch.Net;
+
+import java.util.Optional;
 
 public class ClusterContext {
 
+    private Logger logger = LoggerFactory.getLogger(ClusterContext.class);
     private ClusterManager clusterManager;
 
     public void init(){
@@ -29,6 +36,12 @@ public class ClusterContext {
 
     public ClusterManager getClusterManager(){
         return this.clusterManager;
+    }
+
+    public String getHost(){
+        String host = Network.getContainerIP();
+        logger.info("host:{}",host);
+        return host;
     }
 
 

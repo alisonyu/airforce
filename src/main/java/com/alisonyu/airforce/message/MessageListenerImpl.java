@@ -25,18 +25,26 @@ public class MessageListenerImpl implements MessageListener {
                 message.setTag(tag);
                 message.setTag(topic);
                 message.setPayload(msg.body());
-
                 publisher.onNext(message);
-
             });
-        })
-        //unregister when stop listen
-        .doFinally(()-> {
-            consumer.unregister();
         });
     }
 
-
+    @Override
+    public Flowable<Message> listenOnce(String tag) {
+        MessageConsumer<Buffer> consumer = vertx.eventBus().consumer(this.topic+":"+tag);
+        return Flowable.<Message>fromPublisher(publisher -> {
+            consumer.handler(msg -> {
+                Message message = new Message();
+                message.setTag(tag);
+                message.setTag(topic);
+                message.setPayload(msg.body());
+                publisher.onNext(message);
+                publisher.onComplete();
+                consumer.unregister();
+            });
+        });
+    }
 
 
 }

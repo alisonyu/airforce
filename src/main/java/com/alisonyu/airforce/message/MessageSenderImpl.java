@@ -3,8 +3,8 @@ package com.alisonyu.airforce.message;
 import com.alisonyu.airforce.configuration.anno.Value;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 
-import java.nio.Buffer;
 
 public class MessageSenderImpl implements MessageSender {
 

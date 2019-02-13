@@ -11,4 +11,6 @@ public interface MessageListener {
 
     Flowable<Message> listen(String tag);
 
+    Flowable<Message> listenOnce(String tag);
+
 }

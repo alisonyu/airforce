@@ -96,6 +96,8 @@ public class Instance {
 
 	private static Matcher<Class, Function<String, Object>> castMatcher = Matcher.of(Class.class,
 			Case.of(String.class, () -> String::valueOf),
+			Case.of(boolean.class,() -> Boolean::valueOf),
+			Case.of(Boolean.class,()-> Boolean::valueOf),
 			Case.of(int.class, () -> Integer::valueOf),
 			Case.of(Integer.class, () -> Integer::valueOf),
 			Case.of(double.class, () -> Double::valueOf),

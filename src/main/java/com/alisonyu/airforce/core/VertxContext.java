@@ -38,7 +38,7 @@ public class VertxContext {
                         this.vertxOptions = new VertxOptions();
                     }
                     //init vertx
-                    if (vertxOptions.isClustered()){
+                    if (vertxOptions.getClusterManager() != null){
                         this.vertx = AsyncHelper.blockingGet(handler-> Vertx.clusteredVertx(vertxOptions,handler));
                     }else{
                         this.vertx = Vertx.vertx(vertxOptions);

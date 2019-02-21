@@ -2,6 +2,10 @@ package com.alisonyu.airforce.web.router;
 
 import com.alisonyu.airforce.common.tool.functional.Case;
 import com.alisonyu.airforce.common.tool.functional.Functions;
+import com.alisonyu.airforce.ratelimiter.AirforceRateLimitConfig;
+import com.alisonyu.airforce.ratelimiter.AirforceRateLimiter;
+import com.alisonyu.airforce.ratelimiter.RateLimit;
+import com.alisonyu.airforce.web.anno.Chunk;
 import com.alisonyu.airforce.web.constant.CallMode;
 import com.alisonyu.airforce.web.constant.http.ContentTypes;
 import com.alisonyu.airforce.common.constant.Strings;
@@ -11,6 +15,7 @@ import com.alisonyu.airforce.common.tool.instance.Anno;
 import com.alisonyu.airforce.common.tool.instance.Reflect;
 import com.alisonyu.airforce.web.executor.param.ParamMetaFactory;
 import com.alisonyu.airforce.web.template.ModelView;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.reactivex.Flowable;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
@@ -21,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.*;
 
 /**
@@ -70,16 +76,29 @@ public class RouteMeta {
 	 */
 	private String methodName;
 
+	/**
+	 * content-length是否为chunk
+	 */
+	private boolean chunk = false;
+
+	/**
+	 * 限速配置
+	 */
+	private AirforceRateLimitConfig rateLimiterConfig;
+
 
 	public RouteMeta(String rootPath,Method method){
 		this.methodName = method.getName();
 		this.returnType = method.getReturnType();
 		this.proxyMethod = method;
 		initProduceType(method);
+		initChunk(method);
 		initHttpMethod(method);
 		initMode(method);
+		initRateLimitConfig(method);
 		initParamMetas(method);
 		initPath(rootPath, method);
+
 	}
 
 	private void initHttpMethod(Method method){
@@ -95,6 +114,21 @@ public class RouteMeta {
 						Case.of(OPTIONS.class,()-> io.vertx.core.http.HttpMethod.OPTIONS),
 						Case.of(HEAD.class,()-> io.vertx.core.http.HttpMethod.HEAD)
 						));
+	}
+
+	private void initChunk(Method method){
+		this.chunk = Anno.isMark(method, Chunk.class);
+	}
+
+	private void initRateLimitConfig(Method method){
+		RateLimit rateLimit = method.getAnnotation(RateLimit.class);
+		if (rateLimit != null){
+			int limit = rateLimit.limitForPeriod();
+			long refreshPeriod = rateLimit.limitRefreshPeriod();
+			long waitTime = rateLimit.timeoutDuration();
+			AirforceRateLimitConfig config = new AirforceRateLimitConfig(Duration.ofMillis(waitTime),Duration.ofMillis(refreshPeriod),limit);
+			this.rateLimiterConfig = config;
+		}
 	}
 
 	/**
@@ -192,6 +226,14 @@ public class RouteMeta {
 		return methodName;
 	}
 
+	public boolean isChunk(){
+		return chunk;
+	}
+
+	public AirforceRateLimitConfig getRateLimiterConfig(){
+		return rateLimiterConfig;
+	}
+
 	@Override
 	public String toString() {
 		return "RouteMeta{" +
@@ -201,7 +243,10 @@ public class RouteMeta {
 				", produceType='" + produceType + '\'' +
 				", httpMethod=" + httpMethod +
 				", mode=" + mode +
+				", proxy=" + proxy +
+				", proxyMethod=" + proxyMethod +
 				", methodName='" + methodName + '\'' +
+				", chunk=" + chunk +
 				'}';
 	}
 }

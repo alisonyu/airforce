@@ -13,8 +13,6 @@ public class RateLimiterManager {
         rateLimiterMap.put(airforceRateLimiter.getName(),airforceRateLimiter);
     }
 
-
-
     public static Map<String,AirforceRateLimitConfig> getRateLimiterInfos(){
         Map<String,AirforceRateLimitConfig> infos = new HashMap<>();
         rateLimiterMap.forEach((key,value) -> {

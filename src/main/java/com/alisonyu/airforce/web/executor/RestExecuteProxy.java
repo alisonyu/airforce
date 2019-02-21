@@ -2,6 +2,9 @@ package com.alisonyu.airforce.web.executor;
 
 import com.alisonyu.airforce.common.tool.async.MethodAsyncExecutor;
 import com.alisonyu.airforce.core.AirForceVerticle;
+import com.alisonyu.airforce.ratelimiter.AirforceRateLimitConfig;
+import com.alisonyu.airforce.ratelimiter.AirforceRateLimiter;
+import com.alisonyu.airforce.ratelimiter.RequestTooFastException;
 import com.alisonyu.airforce.web.constant.CallMode;
 import com.alisonyu.airforce.web.constant.http.Headers;
 import com.alisonyu.airforce.web.exception.ExceptionManager;
@@ -31,8 +34,8 @@ public class RestExecuteProxy {
     private Vertx vertx;
     private Scheduler vertxScheduler;
     private Scheduler blockingScheduler;
-    //todo Map<Method,Function<Object[],Flowable<Object>>> asyncExecutorMap
     private Map<Method, MethodAsyncExecutor> asyncExecutorMap = new ConcurrentHashMap<>();
+    private Map<RouteMeta,AirforceRateLimiter> rateLimiterMap = new ConcurrentHashMap<>();
     private List<MessageConsumer> messageConsumers = new ArrayList<>();
 
     public static RestExecuteProxy doMount(AirForceVerticle proxyVerticle,Vertx vertx){
@@ -54,10 +57,8 @@ public class RestExecuteProxy {
 
     private MessageConsumer<RoutingContext> registerMethodToEventBus(RouteMeta routeMeta, EventBus eb){
         String dispatcherAddress = DispatcherRouter.getDispatcherAddress(routeMeta.getHttpMethod(),routeMeta.getPath());
-        //todo 改为rxjava的形式
         return eb.<RoutingContext>localConsumer(dispatcherAddress,event -> {
             RoutingContext routingContext = event.body();
-            //todo 类为资源做限速，decorator该方法
             execute(routingContext,routeMeta);
         });
     }
@@ -66,14 +67,21 @@ public class RestExecuteProxy {
 
         Scheduler scheduler = routeMeta.getMode() == CallMode.EventLoop ? vertxScheduler : blockingScheduler;
         MethodAsyncExecutor methodAsyncExecutor = getAsyncExecutor(routeMeta.getProxyMethod());
-
+        AirforceRateLimiter rateLimiter = getRateLimiter(routeMeta);
         final HttpServerResponse response = ctx.response();
         response.putHeader(Headers.CONTENT_TYPE,routeMeta.getProduceType());
-        response.setChunked(true);
-        //todo 方法级别限速入口，使用operator进行限速
-        //todo 考虑返回类型为Null的情况
+        response.setChunked(routeMeta.isChunk());
         //解析参数，并将参数作为入口
         Flowable.fromCallable(()-> ArgsBuilder.build(routeMeta,ctx))
+                //进行限速
+                .doOnSubscribe(l-> {
+                    if (rateLimiter != null){
+                        boolean permit = rateLimiter.acquirePermission();
+                        if (!permit){
+                            throw new RequestTooFastException();
+                        }
+                    }
+                })
                 //方法调用
                 .flatMap(args -> methodAsyncExecutor.invoke(args))
                 .onErrorReturn(t -> ExceptionManager.handleException(routeMeta,ctx,this,t))
@@ -89,7 +97,11 @@ public class RestExecuteProxy {
                 })
                 //将结果写入到http response中
                 .subscribe(buffer->{
-                   response.write(buffer);
+                    if (routeMeta.isChunk()){
+                        response.write(buffer);
+                    }else{
+                        response.end(buffer);
+                    }
                 });
     }
 
@@ -99,9 +111,18 @@ public class RestExecuteProxy {
        });
     }
 
-    //todo unregister
-    public void unRegister(){
 
+    private AirforceRateLimiter getRateLimiter(RouteMeta routeMeta){
+        return rateLimiterMap.computeIfAbsent(routeMeta,meta -> {
+            AirforceRateLimitConfig config = meta.getRateLimiterConfig();
+            if (config != null){
+                String resourceName = routeMeta.getPath()+"#"+routeMeta.getHttpMethod().name();
+                return AirforceRateLimiter.of(resourceName,config);
+            }else{
+                return null;
+            }
+        });
     }
+
 
 }

@@ -3,6 +3,7 @@ package com.alisonyu.airforce.cluster;
 import com.alisonyu.airforce.cluster.config.ZookeeperConfig;
 import com.alisonyu.airforce.common.tool.io.Network;
 import com.alisonyu.airforce.configuration.AirForceEnv;
+import com.alisonyu.airforce.core.config.SystemConfig;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
@@ -39,7 +40,13 @@ public class ClusterContext {
     }
 
     public String getHost(){
-        String host = Network.getContainerIP();
+        SystemConfig systemConfig = AirForceEnv.getConfig(SystemConfig.class);
+        String host;
+        if (systemConfig.getRunMode().equals(SystemConfig.RUNMODE_DOCKER)){
+            host = Network.getContainerIP();
+        }else{
+            host = "localhost";
+        }
         logger.info("host:{}",host);
         return host;
     }

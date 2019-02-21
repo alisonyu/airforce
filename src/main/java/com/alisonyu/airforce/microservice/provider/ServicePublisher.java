@@ -34,6 +34,12 @@ public class ServicePublisher {
         final Class<?> finalItf = itf;
         final String finalGroup = group;
         final String finalVersion = version;
+
+        /**
+         * 获取限速相关的
+         */
+
+
         Arrays.stream(itf.getDeclaredMethods())
                 .forEach(method -> {
                     String name = MethodNameUtils.getName(finalItf,method,finalGroup,finalVersion);

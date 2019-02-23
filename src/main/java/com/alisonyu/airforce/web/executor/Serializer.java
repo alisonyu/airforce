@@ -1,7 +1,6 @@
 package com.alisonyu.airforce.web.executor;
 
 import com.alisonyu.airforce.web.constant.http.ContentTypes;
-import com.alisonyu.airforce.web.template.ModelView;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import org.slf4j.Logger;

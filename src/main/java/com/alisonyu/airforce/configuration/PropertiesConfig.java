@@ -1,6 +1,5 @@
 package com.alisonyu.airforce.configuration;
 
-import java.util.Optional;
 import java.util.Properties;
 
 public class PropertiesConfig implements Config {

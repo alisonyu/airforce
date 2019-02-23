@@ -3,7 +3,6 @@ package com.alisonyu.airforce.core;
 import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.reactivex.RxHelper;
 
 /**
  * airforce's vertx manager

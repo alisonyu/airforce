@@ -1,6 +1,5 @@
 package com.alisonyu.airforce.web.router;
 
-import com.alisonyu.airforce.common.constant.Strings;
 import com.alisonyu.airforce.core.AirForceVerticle;
 import com.alisonyu.airforce.web.router.mounter.RouterMounter;
 import com.alisonyu.airforce.web.transfer.UnsafeLocalMessageCodec;
@@ -12,12 +11,9 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * route handler will be dispatched to eventbus

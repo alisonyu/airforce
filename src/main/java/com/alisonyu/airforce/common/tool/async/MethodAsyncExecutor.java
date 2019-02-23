@@ -1,6 +1,5 @@
 package com.alisonyu.airforce.common.tool.async;
 
-import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.alisonyu.airforce.common.tool.instance.Instance;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;

@@ -2,8 +2,6 @@ package com.alisonyu.airforce.common.tool.io;
 
 import com.google.common.base.Charsets;
 import io.vertx.core.json.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;

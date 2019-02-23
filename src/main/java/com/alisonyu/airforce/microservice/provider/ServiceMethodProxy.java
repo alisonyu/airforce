@@ -2,74 +2,85 @@ package com.alisonyu.airforce.microservice.provider;
 
 import com.alisonyu.airforce.common.tool.async.MethodAsyncExecutor;
 import com.alisonyu.airforce.microservice.utils.ServiceMessageDeliveryOptions;
-import com.alisonyu.airforce.common.tool.async.AsyncHelper;
-import io.reactivex.Flowable;
-import io.vertx.core.Future;
-import io.vertx.core.eventbus.DeliveryOptions;
+import com.alisonyu.airforce.ratelimiter.*;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.eventbus.Message;
-import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 服务方法代理类
  */
 public class ServiceMethodProxy {
 
+    private Logger logger = LoggerFactory.getLogger(ServiceMethodProxy.class);
 
-    private Object target;
-    private Method proxyMethod;
-    private DeliveryOptions deliveryOptions;
+    private final Object target;
+    private final Method proxyMethod;
+    private AirforceRateLimiter rateLimiter;
+    private MethodAsyncExecutor methodAsyncExecutor;
 
     public ServiceMethodProxy(Object instance, Method method){
         this.target = instance;
         this.proxyMethod = method;
-        this.deliveryOptions = new DeliveryOptions();
+        initMethodAsyncExecutor();
+        initRateLimiter();
+    }
+
+
+    /**
+     * if service instanceOf abstractVerticle,the proxy method will be executed on context thread,else it will be executed on worker threads
+     */
+    private void initMethodAsyncExecutor(){
+        Context context = null;
+        if (this.target instanceof AbstractVerticle){
+            AbstractVerticle v = (AbstractVerticle) target;
+            context = v.getVertx().getOrCreateContext();
+        }
+        this.methodAsyncExecutor = new MethodAsyncExecutor(this.target,this.proxyMethod,context);
+    }
+
+    private void initRateLimiter(){
+        Method method = this.proxyMethod;
+        RateLimit rateLimit = method.getAnnotation(RateLimit.class);
+        if (rateLimit != null){
+            String resourceName = method.getName() + "#" + "service";
+            AirforceRateLimitConfig config = AirForceRateLimiterHelper.getConfigFromMethod(method);
+            this.rateLimiter = AirforceRateLimiter.of(resourceName,config);
+        }
     }
 
 
     public void call(Message<List<Object>> message){
-        Object result = null;
-        try{
-            List<Object> callParams = message.body();
-            result = proxyMethod.invoke(target,callParams.toArray());
-        }catch (Throwable e){
-            e.printStackTrace();
-            result = e;
-        }
-        //处理Rxjava的异步返回
-        if (result instanceof Publisher){
-            Publisher<Object> observable = (Publisher<Object>)result;
-            Flowable.fromPublisher(observable)
-                    //在worker线程池执行逻辑
-                    .subscribeOn(AsyncHelper.getBlockingScheduler())
-                    .onErrorReturn(t -> t)
-                    //.singleOrError()
-                    .subscribe(o -> {
-                        replyResult(o,message);
-                    });
-        }
-        //处理Future的情况
-        else if (result instanceof Future){
-            Future<Object> future = (Future) result;
-            future.setHandler(as -> {
-                if (as.succeeded()){
-                    replyResult(as.result(),message);
-                }else{
-                    replyResult(as.cause(),message);
-                }
-            });
-        }
-        //处理同步的情况
-        else{
-            replyResult(result,message);
-        }
+        List<Object> callParams = message.body();
+        Object[] params = Optional.ofNullable(message.body())
+                .map(List::toArray)
+                .orElse(new Object[0]);
+        methodAsyncExecutor.invoke(params)
+                .doOnSubscribe(ignored -> rateLimitCheck())
+                .doOnError(e -> logger.error(e.getMessage(),e))
+                .onErrorReturn(e -> e)
+                .subscribe(r -> replyResult(r,message));
+
     }
 
 
     private void replyResult(Object result,Message message){
         message.reply(result, ServiceMessageDeliveryOptions.instance);
+    }
+
+    private void rateLimitCheck(){
+        if (this.rateLimiter != null){
+            boolean permission = this.rateLimiter.acquirePermission();
+            if (!permission){
+                throw new RequestTooFastException();
+            }
+        }
     }
 
 }

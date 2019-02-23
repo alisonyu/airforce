@@ -1,21 +1,20 @@
 package com.alisonyu.airforce.web.router;
 
+import com.alisonyu.airforce.common.constant.Strings;
 import com.alisonyu.airforce.common.tool.functional.Case;
 import com.alisonyu.airforce.common.tool.functional.Functions;
-import com.alisonyu.airforce.ratelimiter.AirforceRateLimitConfig;
-import com.alisonyu.airforce.ratelimiter.AirforceRateLimiter;
-import com.alisonyu.airforce.ratelimiter.RateLimit;
-import com.alisonyu.airforce.web.anno.Chunk;
-import com.alisonyu.airforce.web.constant.CallMode;
-import com.alisonyu.airforce.web.constant.http.ContentTypes;
-import com.alisonyu.airforce.common.constant.Strings;
-import com.alisonyu.airforce.web.anno.Sync;
-import com.alisonyu.airforce.web.executor.param.ParamMeta;
 import com.alisonyu.airforce.common.tool.instance.Anno;
 import com.alisonyu.airforce.common.tool.instance.Reflect;
+import com.alisonyu.airforce.ratelimiter.AirForceRateLimiterHelper;
+import com.alisonyu.airforce.ratelimiter.AirforceRateLimitConfig;
+import com.alisonyu.airforce.ratelimiter.RateLimit;
+import com.alisonyu.airforce.web.anno.Chunk;
+import com.alisonyu.airforce.web.anno.Sync;
+import com.alisonyu.airforce.web.constant.CallMode;
+import com.alisonyu.airforce.web.constant.http.ContentTypes;
+import com.alisonyu.airforce.web.executor.param.ParamMeta;
 import com.alisonyu.airforce.web.executor.param.ParamMetaFactory;
 import com.alisonyu.airforce.web.template.ModelView;
-import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.reactivex.Flowable;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
@@ -26,8 +25,9 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * todo 将方法作为另外的源信息抽出来
@@ -123,11 +123,7 @@ public class RouteMeta {
 	private void initRateLimitConfig(Method method){
 		RateLimit rateLimit = method.getAnnotation(RateLimit.class);
 		if (rateLimit != null){
-			int limit = rateLimit.limitForPeriod();
-			long refreshPeriod = rateLimit.limitRefreshPeriod();
-			long waitTime = rateLimit.timeoutDuration();
-			AirforceRateLimitConfig config = new AirforceRateLimitConfig(Duration.ofMillis(waitTime),Duration.ofMillis(refreshPeriod),limit);
-			this.rateLimiterConfig = config;
+			this.rateLimiterConfig = AirForceRateLimiterHelper.getConfigFromMethod(method);
 		}
 	}
 

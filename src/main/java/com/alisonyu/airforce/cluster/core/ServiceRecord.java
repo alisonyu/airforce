@@ -1,7 +1,7 @@
 package com.alisonyu.airforce.cluster.core;
 
-import com.alisonyu.airforce.configuration.ServerConfig;
 import com.alisonyu.airforce.common.tool.io.Network;
+import com.alisonyu.airforce.configuration.ServerConfig;
 
 import java.net.InetAddress;
 import java.util.Objects;

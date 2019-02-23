@@ -6,7 +6,6 @@ import com.alisonyu.airforce.web.router.RouterManager;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

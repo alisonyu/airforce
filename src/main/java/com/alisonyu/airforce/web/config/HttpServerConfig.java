@@ -1,6 +1,5 @@
 package com.alisonyu.airforce.web.config;
 
-import com.alisonyu.airforce.configuration.anno.Configuration;
 import com.alisonyu.airforce.configuration.anno.Value;
 
 

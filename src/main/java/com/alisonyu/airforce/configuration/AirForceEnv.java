@@ -1,11 +1,11 @@
 package com.alisonyu.airforce.configuration;
 
+import com.alisonyu.airforce.common.constant.Strings;
+import com.alisonyu.airforce.common.tool.Pair;
+import com.alisonyu.airforce.common.tool.instance.Instance;
+import com.alisonyu.airforce.common.tool.io.FileUtils;
 import com.alisonyu.airforce.configuration.anno.Configuration;
 import com.alisonyu.airforce.configuration.anno.Value;
-import com.alisonyu.airforce.common.constant.Strings;
-import com.alisonyu.airforce.common.tool.io.FileUtils;
-import com.alisonyu.airforce.common.tool.instance.Instance;
-import com.alisonyu.airforce.common.tool.Pair;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

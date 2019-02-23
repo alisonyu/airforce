@@ -2,8 +2,6 @@ package com.alisonyu.airforce.web.executor.param;
 
 import com.alisonyu.airforce.web.constant.ParamType;
 
-import java.util.Objects;
-
 /**
  * Rest接口方法参数元信息
  * @author yuzhiyi

@@ -3,8 +3,6 @@ package com.alisonyu.airforce.cluster.config;
 import com.alisonyu.airforce.configuration.anno.Configuration;
 import com.alisonyu.airforce.configuration.anno.Value;
 
-import java.util.Arrays;
-
 /**
  * @author yuzhiyi
  * @date 2018/9/21 10:22

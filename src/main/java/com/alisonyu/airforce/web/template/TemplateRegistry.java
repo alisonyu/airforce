@@ -4,7 +4,6 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.web.common.template.TemplateEngine;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class TemplateRegistry {
 

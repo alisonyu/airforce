@@ -1,17 +1,17 @@
 package com.alisonyu.airforce.core;
 
+import com.alisonyu.airforce.common.tool.TimeMeter;
+import com.alisonyu.airforce.common.tool.async.AsyncHelper;
+import com.alisonyu.airforce.common.tool.instance.Instance;
 import com.alisonyu.airforce.configuration.AirForceDefaultConfig;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.web.HttpServerVerticle;
+import com.alisonyu.airforce.web.config.StaticConfiguration;
+import com.alisonyu.airforce.web.router.RouterManager;
 import com.alisonyu.airforce.web.router.mounter.RouterMounter;
 import com.alisonyu.airforce.web.router.mounter.StaticRouteMounter;
 import com.alisonyu.airforce.web.router.mounter.WebRouteMounter;
 import com.alisonyu.airforce.web.template.HtmlTemplateEngine;
-import com.alisonyu.airforce.web.router.*;
-import com.alisonyu.airforce.common.tool.async.AsyncHelper;
-import com.alisonyu.airforce.common.tool.TimeMeter;
-import com.alisonyu.airforce.common.tool.instance.Instance;
-import com.alisonyu.airforce.web.config.StaticConfiguration;
 import com.alisonyu.airforce.web.template.TemplateEngineManager;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;

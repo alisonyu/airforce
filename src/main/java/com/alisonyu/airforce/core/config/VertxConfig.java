@@ -1,13 +1,8 @@
 package com.alisonyu.airforce.core.config;
 
 import com.alisonyu.airforce.cluster.ClusterContext;
-import com.alisonyu.airforce.cluster.config.ZookeeperConfig;
-import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.monitor.MonitorContext;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
-import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
 
 public class VertxConfig {
 

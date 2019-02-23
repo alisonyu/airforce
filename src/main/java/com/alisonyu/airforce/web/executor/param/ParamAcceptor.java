@@ -1,9 +1,9 @@
 package com.alisonyu.airforce.web.executor.param;
 
-import com.alisonyu.airforce.web.constant.ParamType;
 import com.alisonyu.airforce.common.tool.functional.Case;
 import com.alisonyu.airforce.common.tool.functional.Matcher;
 import com.alisonyu.airforce.common.tool.instance.Instance;
+import com.alisonyu.airforce.web.constant.ParamType;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;

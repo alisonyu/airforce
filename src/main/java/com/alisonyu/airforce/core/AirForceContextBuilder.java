@@ -15,7 +15,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.sstore.SessionStore;
 import io.vertx.reactivex.RxHelper;
-import org.thymeleaf.context.WebContext;
 
 import java.util.List;
 import java.util.function.Function;
@@ -28,7 +27,6 @@ public class AirForceContextBuilder {
     private List<RouterMounter> routerMounterList;
     private List<ExceptionHandler> exceptionHandlers;
     private List<TemplateRegistry> templateRegistries;
-    private List<Object> services;
     private boolean embedHttpServer = false;
     private Function<Vertx, SessionStore> sessionStoreFacotry;
     private HttpServerOptions httpServerOptions;
@@ -89,10 +87,6 @@ public class AirForceContextBuilder {
         return this;
     }
 
-    public AirForceContextBuilder publishServices(List<Object> services){
-        this.services = services;
-        return this;
-    }
 
     public AirForceContext init(){
 
@@ -126,11 +120,7 @@ public class AirForceContextBuilder {
 
         AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertxContext.getVertx(),false));
 
-        //init microservice
-        ServiceInitializer serviceInitializer = new ServiceInitializer(vertx);
-        if (services != null){
-            serviceInitializer.publishServices(services);
-        }
+
 
         //init web
         SessionStore sessionStore = null;

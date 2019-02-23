@@ -1,7 +1,5 @@
 package com.alisonyu.airforce.message;
 
-import com.alisonyu.airforce.configuration.anno.Value;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 

@@ -1,7 +1,7 @@
 package com.alisonyu.airforce.microservice.provider;
 
-import com.alisonyu.airforce.microservice.utils.MethodNameUtils;
 import com.alisonyu.airforce.common.tool.instance.Anno;
+import com.alisonyu.airforce.microservice.utils.MethodNameUtils;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class ServicePublisher {
 
@@ -36,11 +37,17 @@ public class ServicePublisher {
         final String finalVersion = version;
 
         /**
-         * 获取限速相关的
+         * get Method from itf
          */
-
-
-        Arrays.stream(itf.getDeclaredMethods())
+        Arrays.stream(itf.getMethods())
+                .map(method -> {
+                    try {
+                        return clazz.getMethod(method.getName(),method.getParameterTypes());
+                    } catch (NoSuchMethodException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .forEach(method -> {
                     String name = MethodNameUtils.getName(finalItf,method,finalGroup,finalVersion);
                     EventBus eventBus = vertx.eventBus();

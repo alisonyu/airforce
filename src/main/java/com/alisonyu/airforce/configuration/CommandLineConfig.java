@@ -1,9 +1,6 @@
 package com.alisonyu.airforce.configuration;
 
-import com.alisonyu.airforce.configuration.anno.Configuration;
 import org.apache.commons.cli.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 解析命令行参数

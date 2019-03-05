@@ -8,11 +8,13 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.function.Supplier;
 
+@Deprecated
 public class ConsumerProvider {
 
+    //todo add circutebreaker config entry
     public static <T> T getConsumer(Vertx vertx, Class<T> itf, String group, String version, CircuitBreakerOptions circuitBreakerOptions, Supplier<Object> fallbackFactory){
         Object fallbackInstance = fallbackFactory == null ? null : fallbackFactory.get();
-        InvocationHandler invocationHandler = new ConsumeInvocationHandler(vertx,itf,group,version,circuitBreakerOptions,fallbackInstance);
+        ConsumeInvocationHandler invocationHandler = new ConsumeInvocationHandler(vertx,itf,group,version,null,fallbackInstance);
         return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),new Class[]{itf},invocationHandler);
     }
 

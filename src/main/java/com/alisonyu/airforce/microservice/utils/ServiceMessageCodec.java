@@ -8,11 +8,16 @@ public class ServiceMessageCodec implements MessageCodec<Object,Object> {
 
     public static final String name = ServiceMessageCodec.class.getName();
 
-    static FSTConfiguration configuration = FSTConfiguration.createDefaultConfiguration();
+    static ThreadLocal<FSTConfiguration> configuration = new ThreadLocal<FSTConfiguration>(){
+        @Override
+        protected FSTConfiguration initialValue() {
+            return FSTConfiguration.createDefaultConfiguration();
+        }
+    };
 
     @Override
     public void encodeToWire(Buffer buffer, Object s) {
-        byte[] bytes = configuration.asByteArray(s);
+        byte[] bytes = configuration.get().asByteArray(s);
         buffer.appendInt(bytes.length).appendBytes(bytes);
     }
 
@@ -23,7 +28,7 @@ public class ServiceMessageCodec implements MessageCodec<Object,Object> {
         pos += 4;
         //read content
         byte[] bytes = buffer.getBytes(pos,pos+length);
-        return configuration.asObject(bytes);
+        return configuration.get().asObject(bytes);
     }
 
     /**
@@ -31,8 +36,8 @@ public class ServiceMessageCodec implements MessageCodec<Object,Object> {
      */
     @Override
     public Object transform(Object s) {
-        byte[] bytes = configuration.asByteArray(s);
-        return configuration.asObject(bytes);
+        byte[] bytes = configuration.get().asByteArray(s);
+        return configuration.get().asObject(bytes);
     }
 
     @Override

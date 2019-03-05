@@ -4,11 +4,13 @@ import com.alisonyu.airforce.cluster.ClusterContext;
 import com.alisonyu.airforce.common.tool.async.AsyncHelper;
 import com.alisonyu.airforce.configuration.AirForceEnv;
 import com.alisonyu.airforce.core.config.VertxConfig;
+import com.alisonyu.airforce.microservice.AirForceCircuitBreakerConfig;
 import com.alisonyu.airforce.monitor.MonitorContext;
 import com.alisonyu.airforce.web.AirForceWebContext;
 import com.alisonyu.airforce.web.exception.ExceptionHandler;
 import com.alisonyu.airforce.web.router.mounter.RouterMounter;
 import com.alisonyu.airforce.web.template.TemplateRegistry;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServerOptions;
@@ -31,6 +33,7 @@ public class AirForceContextBuilder {
     private Function<Vertx, SessionStore> sessionStoreFacotry;
     private HttpServerOptions httpServerOptions;
     private String[] args;
+    private CircuitBreakerConfig circuitBreakerConfig;
 
 
     public static AirForceContextBuilder create(){
@@ -87,6 +90,11 @@ public class AirForceContextBuilder {
         return this;
     }
 
+    public AirForceContextBuilder circuitBreakerConfig(CircuitBreakerConfig circuitBreakerConfig){
+        this.circuitBreakerConfig = circuitBreakerConfig;
+        return this;
+    }
+
 
     public AirForceContext init(){
 
@@ -120,6 +128,11 @@ public class AirForceContextBuilder {
 
         AsyncHelper.registerScheduler(RxHelper.blockingScheduler(vertxContext.getVertx(),false));
 
+
+        //init service
+        //init circuitBreakerConfig
+        AirForceCircuitBreakerConfig config = AirForceEnv.getConfig(AirForceCircuitBreakerConfig.class);
+        config.setCircuitBreakerConfig(this.circuitBreakerConfig);
 
 
         //init web

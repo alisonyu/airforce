@@ -1,36 +1,31 @@
 package com.alisonyu.airforce.microservice.consumer;
 
 import com.alisonyu.airforce.common.tool.async.MethodAsyncExecutor;
-import com.alisonyu.airforce.core.config.SystemConfig;
 import com.alisonyu.airforce.microservice.utils.MethodNameUtils;
 import com.alisonyu.airforce.microservice.utils.ServiceMessageDeliveryOptions;
-import com.alisonyu.airforce.ratelimiter.AirForceRateLimiterHelper;
 import com.alisonyu.airforce.ratelimiter.AirforceRateLimiter;
-import com.alisonyu.airforce.ratelimiter.RequestTooFastException;
 import com.google.common.collect.Lists;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerOpenException;
 import io.github.resilience4j.circuitbreaker.utils.CircuitBreakerUtils;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
-import io.reactivex.functions.Function;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.reactivex.RxHelper;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ConsumeInvocationHandler implements InvocationHandler {
 
@@ -40,97 +35,24 @@ public class ConsumeInvocationHandler implements InvocationHandler {
     private String version;
     private Vertx vertx;
     private CircuitBreakerOptions circuitBreakerOptions;
-    private Scheduler blockingScheduler;
+    private CircuitBreakerConfig circuitBreakerConfig;
     private final Object fallBackInstance;
-    private Map<String, MethodAsyncExecutor> fallBackMethodMap = new HashMap<>();
+    private Map<Method, MethodAsyncExecutor> fallBackMethodMap = new ConcurrentHashMap<>();
+    private Map<Method, io.github.resilience4j.circuitbreaker.CircuitBreaker> circuitBreakerMap = new ConcurrentHashMap<>();
     private static Object VOID = new Object();
 
 
-    public ConsumeInvocationHandler(Vertx vertx,Class<?> serviceClass,String group,String version,CircuitBreakerOptions circuitBreakerOptions,Object fallbackInstance){
+    public ConsumeInvocationHandler(Vertx vertx,Class<?> serviceClass,String group,String version,CircuitBreakerConfig circuitBreakerConfig,Object fallbackInstance){
         this.version = version;
         this.serviceClass = serviceClass;
         this.group = group;
         this.vertx = vertx;
-        this.blockingScheduler = RxHelper.blockingScheduler(vertx,false);
         this.fallBackInstance = fallbackInstance;
-        this.circuitBreakerOptions = circuitBreakerOptions;
+        this.circuitBreakerConfig = circuitBreakerConfig;
     }
 
-    public Object invoke1(Object proxy, Method method, Object[] args) throws Throwable {
-        EventBus eb = vertx.eventBus();
-        CircuitBreaker circuitBreaker = getCircuitBreaker(method);
-        String address = MethodNameUtils.getName(serviceClass,method,group,version);
-        Class<?> returnType = method.getReturnType();
-        Flowable<Object> flowable = Flowable.fromPublisher(publisher -> {
-            //executor with circuitBreaker
-            circuitBreaker.executeWithFallback(future -> {
-                //remote call logic,the result will be represent as future
-                eb.<Object>send(address,Lists.newArrayList(args), ServiceMessageDeliveryOptions.instance, as -> {
-                    if (as.succeeded()){
-                        Object result = as.result().body();
-                        if (result instanceof Throwable){
-                            future.fail((Throwable) result);
-                        }
-                        if (returnType == Void.TYPE){
-                            future.complete(VOID);
-                        }else{
-                            future.complete(result);
-                        }
-                    }else{
-                        future.fail(as.cause());
-                    }
-                });
-            },v -> {
-                //fallback logic
-                logger.error("triger fallback");
-                if (this.fallBackInstance == null){
-                    throw new RuntimeException(v);
-                }
-                Flowable<Object> fallbackFlowable;
-                try {
-                    Object o = method.invoke(fallBackInstance,args);
-                    if (o instanceof Flowable){
-                        fallbackFlowable = (Flowable) o;
-                    }else if (o instanceof Future){
-                        Future<Object> future = (Future) o;
-                        fallbackFlowable = Flowable.fromPublisher(fallbackPublisher -> {
-                            ((Future<Object>) o).setHandler(as -> {
-                                  if (as.succeeded()){
-                                      fallbackPublisher.onNext(as.result());
-                                      fallbackPublisher.onComplete();
-                                  }else{
-                                      fallbackPublisher.onError(as.cause());
-                                  }
-                            });
-                        });
-                    }else{
-                        fallbackFlowable = Flowable.just(o);
-                    }
-                    return transfer(method,fallbackFlowable);
-                } catch (Exception e) {
-                    logger.error("run fallback method error",e);
-                    fallbackFlowable = Flowable.fromPublisher(errorPublisher -> errorPublisher.onError(e));
-                }
-                return transfer(method,fallbackFlowable);
-            }).setHandler(ar -> {
-                if (ar.succeeded()){
-                    Object result = ar.result();
-                    //if fallback method invoke,this block will be executed
-                    if (result instanceof Flowable){
-                        ((Flowable) result).subscribe(o-> {
-                            publisher.onNext(o);
-                            publisher.onComplete();
-                        });
-                    }else{
-                        publisher.onNext(result);
-                        publisher.onComplete();
-                    }
-                }else{
-                    publisher.onError(ar.cause());
-                }
-            });
-        });
-        return transfer(method,flowable);
+    public void setCircuitBreakerConfig(CircuitBreakerConfig circuitBreakerConfig){
+        this.circuitBreakerConfig = circuitBreakerConfig;
     }
 
     private Object transfer(Method method,Flowable<Object> flowable){
@@ -147,6 +69,9 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                     .subscribe(future::complete);
             return future;
         }
+        else if (Void.class.isAssignableFrom(returnType)){
+            return null;
+        }
         else{
             throw new IllegalStateException("the service return type illegal!");
         }
@@ -155,18 +80,9 @@ public class ConsumeInvocationHandler implements InvocationHandler {
 
 
     public Object invoke2(Object proxy,Method method,Object[] args){
-        io.github.resilience4j.circuitbreaker.CircuitBreaker circuitBreaker = getCircuteBreaker2(method);
-        AirforceRateLimiter rateLimiter = getRateLimiter(method);
+        io.github.resilience4j.circuitbreaker.CircuitBreaker circuitBreaker = getCircuitBreaker2(method);
         long startTime = System.nanoTime();
         Flowable<Object> remoteCallFlow = remoteCall(method,args)
-                //check rate limit
-                .doOnSubscribe(ignored -> {
-                    if (rateLimiter != null){
-                        if (!rateLimiter.acquirePermission()){
-                            throw new RequestTooFastException();
-                        }
-                    }
-                })
                 //check circuteBreaker status
                 .doOnSubscribe(ignored -> {
                     if (circuitBreaker != null){
@@ -192,7 +108,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                 //if circuteBreaker open,trigger fallback method
                 .onErrorResumeNext(throwable -> {
                     if (throwable instanceof CircuitBreakerOpenException){
-                        Flowable<Object> fallbackFlow = executeFallbackMethod(method);
+                        Flowable<Object> fallbackFlow = executeFallbackMethod(method,args);
                         if (fallbackFlow == null){
                             return Flowable.error(throwable);
                         }else{
@@ -220,7 +136,6 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                         publisher.onError((Throwable) result);
                     }
                     if (returnType == Void.TYPE){
-                        publisher.onNext(VOID);
                         publisher.onComplete();
                     }else{
                         publisher.onNext(result);
@@ -238,7 +153,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        return invoke1(proxy,method,args);
+        return invoke2(proxy,method,args);
     }
 
 
@@ -253,19 +168,42 @@ public class ConsumeInvocationHandler implements InvocationHandler {
     }
 
 
-    private io.github.resilience4j.circuitbreaker.CircuitBreaker getCircuteBreaker2(Method method){
-        //todo
-        return null;
+    private io.github.resilience4j.circuitbreaker.CircuitBreaker getCircuitBreaker2(Method method){
+        return circuitBreakerMap.computeIfAbsent(method,ignored -> {
+            if (circuitBreakerConfig == null){
+                return null;
+            }else{
+                String resourceName = method.getName() + "#" + "circuitBreaker";
+                return io.github.resilience4j.circuitbreaker.CircuitBreaker.of(resourceName,circuitBreakerConfig);
+            }
+        });
     }
 
-    private AirforceRateLimiter getRateLimiter(Method method){
-        //todo
-        return null;
-    }
+    private Flowable<Object> executeFallbackMethod(Method method,Object[] args){
+        if (fallBackInstance == null){
+            return null;
+        }else{
+            MethodAsyncExecutor executor = fallBackMethodMap.computeIfAbsent(method,key-> {
+                try {
+                     Method fallbackMethod = fallBackInstance.getClass().getMethod(method.getName(),method.getParameterTypes());
+                     Context context = null;
+                     if (fallBackInstance instanceof AbstractVerticle){
+                         context = ((AbstractVerticle) fallBackInstance).getVertx().getOrCreateContext();
+                     }
+                     MethodAsyncExecutor asyncExecutor = new MethodAsyncExecutor(fallBackInstance,method,context);
+                     return asyncExecutor;
 
-    private Flowable<Object> executeFallbackMethod(Method method){
-        //todo
-        return null;
+                } catch (NoSuchMethodException e) {
+                    logger.warn("cannot find fallback method {} from {}",method.getName(),fallBackInstance.getClass());
+                    return null;
+                }
+            });
+            if (executor != null){
+                return executor.invoke(args);
+            }else{
+                return null;
+            }
+        }
     }
 
 

@@ -10,6 +10,8 @@ public class MessageListenerImpl implements MessageListener {
     private Vertx vertx;
     private String topic;
 
+    private Flowable<Message> messageSource;
+
     public MessageListenerImpl(Vertx vertx,String topic){
         this.vertx = vertx;
         this.topic = topic;
@@ -18,16 +20,22 @@ public class MessageListenerImpl implements MessageListener {
 
     @Override
     public Flowable<Message> listen(String tag) {
-        MessageConsumer<Buffer> consumer = vertx.eventBus().consumer(this.topic+":"+tag);
-        return Flowable.<Message>fromPublisher(publisher -> {
-            consumer.handler(msg -> {
-                Message message = new Message();
-                message.setTag(tag);
-                message.setTag(topic);
-                message.setPayload(msg.body());
-                publisher.onNext(message);
-            });
-        });
+        if (messageSource == null){
+            synchronized (this){
+                MessageConsumer<Buffer> consumer = vertx.eventBus().consumer(this.topic+":"+tag);
+                this.messageSource = Flowable.<Message>fromPublisher(publisher -> {
+                    consumer.handler(msg -> {
+                        Message message = new Message();
+                        message.setTag(tag);
+                        message.setTag(topic);
+                        message.setPayload(msg.body());
+                        publisher.onNext(message);
+                    });
+                }).publish();
+            }
+        }
+        return messageSource;
+
     }
 
     @Override

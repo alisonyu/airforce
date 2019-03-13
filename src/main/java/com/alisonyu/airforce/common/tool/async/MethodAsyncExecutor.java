@@ -3,6 +3,7 @@ package com.alisonyu.airforce.common.tool.async;
 import com.alisonyu.airforce.common.tool.instance.Instance;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
+import io.reactivex.Single;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.reactivex.RxHelper;
@@ -21,6 +22,7 @@ public class MethodAsyncExecutor {
     private Context context;
     private Scheduler contextScheduler;
 
+    @Deprecated
     public MethodAsyncExecutor(Object instance, Method method, Context context){
         this.instance = instance;
         this.method = method;
@@ -30,26 +32,37 @@ public class MethodAsyncExecutor {
         }
     }
 
+    public MethodAsyncExecutor(Object instance,Method method){
+        this.instance = instance;
+        this.method = method;
+    }
+
     public Flowable<Object> invoke(Object[] args){
         return invoke0(args)
-            .flatMap(o -> {
-                if (o instanceof Flowable){
-                    return (Flowable<Object>) o;
-                }
-                else if (o instanceof Future){
-                    return AsyncHelper.fromFuture((Future<Object>) o);
-                }
-                else{
-                    return Flowable.<Object>just(o);
-                }
+                .flatMap(o-> {
+
+        if (o instanceof Flowable){
+            return (Flowable<Object>) o;
+        }
+        else if (o instanceof Future){
+            return AsyncHelper.fromFuture((Future<Object>) o);
+        }
+        else{
+            return Flowable.<Object>just(o);
+        }
+
         });
     }
 
+    /**
+     * 该executor不应该决定方法是在什么线程上执行的，这个由上层调用者决定
+     * @param args
+     * @return
+     */
     private Flowable<Object> invoke0(Object[] args){
-        Scheduler scheduler = context == null ? AsyncHelper.getBlockingScheduler() : contextScheduler;
-        return Flowable.fromCallable(()-> {
+        return Single.fromCallable(()-> {
             return Instance.enhanceInvoke(instance,method.getName(),args);
-        }).subscribeOn(scheduler);
+        }).toFlowable();
     }
 
 }

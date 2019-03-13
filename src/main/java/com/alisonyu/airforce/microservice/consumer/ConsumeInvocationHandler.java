@@ -23,9 +23,11 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class ConsumeInvocationHandler implements InvocationHandler {
 
@@ -40,15 +42,17 @@ public class ConsumeInvocationHandler implements InvocationHandler {
     private Map<Method, MethodAsyncExecutor> fallBackMethodMap = new ConcurrentHashMap<>();
     private Map<Method, io.github.resilience4j.circuitbreaker.CircuitBreaker> circuitBreakerMap = new ConcurrentHashMap<>();
     private static Object VOID = new Object();
+    private Long timeout;
 
 
-    public ConsumeInvocationHandler(Vertx vertx,Class<?> serviceClass,String group,String version,CircuitBreakerConfig circuitBreakerConfig,Object fallbackInstance){
+    public ConsumeInvocationHandler(Vertx vertx,Class<?> serviceClass,String group,String version,CircuitBreakerConfig circuitBreakerConfig,Object fallbackInstance,Long timeout){
         this.version = version;
         this.serviceClass = serviceClass;
         this.group = group;
         this.vertx = vertx;
         this.fallBackInstance = fallbackInstance;
         this.circuitBreakerConfig = circuitBreakerConfig;
+        this.timeout = timeout;
     }
 
     public void setCircuitBreakerConfig(CircuitBreakerConfig circuitBreakerConfig){
@@ -90,7 +94,7 @@ public class ConsumeInvocationHandler implements InvocationHandler {
                     }
                 })
                 //the max waiting time of remote calling
-                .timeout(3,TimeUnit.SECONDS)
+                .timeout(timeout,TimeUnit.MILLISECONDS)
                 //mark error to circuitBreaker
                 .doOnError(t ->{
                     if (circuitBreaker != null && !(t instanceof CircuitBreakerOpenException)){
@@ -205,6 +209,8 @@ public class ConsumeInvocationHandler implements InvocationHandler {
             }
         }
     }
+
+
 
 
 

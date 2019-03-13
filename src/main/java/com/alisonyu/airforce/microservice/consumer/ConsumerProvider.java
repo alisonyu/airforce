@@ -14,7 +14,7 @@ public class ConsumerProvider {
     //todo add circutebreaker config entry
     public static <T> T getConsumer(Vertx vertx, Class<T> itf, String group, String version, CircuitBreakerOptions circuitBreakerOptions, Supplier<Object> fallbackFactory){
         Object fallbackInstance = fallbackFactory == null ? null : fallbackFactory.get();
-        ConsumeInvocationHandler invocationHandler = new ConsumeInvocationHandler(vertx,itf,group,version,null,fallbackInstance);
+        ConsumeInvocationHandler invocationHandler = new ConsumeInvocationHandler(vertx,itf,group,version,null,fallbackInstance,3000L);
         return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),new Class[]{itf},invocationHandler);
     }
 

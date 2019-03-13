@@ -17,6 +17,7 @@ public class ConsumerBuilder<T> {
     private Vertx vertx;
     private CircuitBreakerConfig circuitBreakerConfig;
     private T fallbackInstance;
+    private Long timeout = 3000L;
 
     public static <T> ConsumerBuilder<T> of(Vertx vertx,Class<T> itf){
         Objects.requireNonNull(vertx);
@@ -50,13 +51,18 @@ public class ConsumerBuilder<T> {
         return this;
     }
 
+    public ConsumerBuilder<T> timeout(Long timeout){
+        this.timeout = timeout;
+        return this;
+    }
+
     public T create(){
         //use global circuitBreakerConfig if not specify
         if (circuitBreakerConfig == null){
             AirForceCircuitBreakerConfig config = AirForceEnv.getConfig(AirForceCircuitBreakerConfig.class);
             this.circuitBreakerConfig = config.getCircuitBreakerConfig();
         }
-        ConsumeInvocationHandler invocationHandler = new ConsumeInvocationHandler(vertx,itf,group,version,circuitBreakerConfig,fallbackInstance);
+        ConsumeInvocationHandler invocationHandler = new ConsumeInvocationHandler(vertx,itf,group,version,circuitBreakerConfig,fallbackInstance,timeout);
         return (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),new Class[]{itf},invocationHandler);
     }
 

@@ -1,0 +1,11 @@
+@startuml
+
+Verticle_A -> Eventbus : 订阅topic
+Verticle_B --> Eventbus : 发送消息
+Eventbus -> Eventbus : 获取要订阅的节点的IP
+Eventbus -> Verticle_A : 发送消息
+Verticle_A --> Eventbus :回复消息
+Eventbus -> Eventbus : 获取要发送的节点的IP
+Eventbus -> Verticle_B : 回复消息
+
+@enduml

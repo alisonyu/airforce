@@ -30,7 +30,7 @@ public class DispatcherRouter {
 
 	private static AtomicInteger dispatcherOrders = new AtomicInteger(DISPATCHER_INIT_ORDER);
 
-	private static final DeliveryOptions DELIVERY_OPTIONS = new DeliveryOptions().setCodecName(UnsafeLocalMessageCodec.class.getName());
+	private static final DeliveryOptions DELIVERY_OPTIONS = new DeliveryOptions().setCodecName(UnsafeLocalMessageCodec.class.getName()).setLocalOnly(true);
 
 	/**
 	 * 每一个类继承了AirforceVerticle都会注册路由,一个类只注册一次，不重复注册

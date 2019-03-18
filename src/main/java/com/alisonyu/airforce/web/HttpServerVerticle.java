@@ -1,9 +1,11 @@
 package com.alisonyu.airforce.web;
 
 import com.alisonyu.airforce.configuration.AirForceEnv;
+import com.alisonyu.airforce.core.AirForceVerticle;
 import com.alisonyu.airforce.web.config.HttpServerConfig;
 import com.alisonyu.airforce.web.router.RouterManager;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import org.slf4j.Logger;
@@ -14,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * @author yuzhiyi
  * @date 2018/9/12 15:05
  */
-public class HttpServerVerticle extends AbstractVerticle {
+public class HttpServerVerticle extends AirForceVerticle {
 
 	private Logger logger = LoggerFactory.getLogger(HttpServerVerticle.class);
 	private HttpServerOptions options;
@@ -40,6 +42,13 @@ public class HttpServerVerticle extends AbstractVerticle {
 						logger.error("start http server error",as.cause());
 					}
 				});
+	}
+
+
+	@Override
+	public DeploymentOptions getDeployOption() {
+		int core = Runtime.getRuntime().availableProcessors() * 2;
+		return new DeploymentOptions().setInstances(core);
 	}
 
 }

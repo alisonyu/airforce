@@ -1,0 +1,14 @@
+@startuml
+
+object Vertx
+object Eventloop
+object Thread
+object Verticle
+
+Vertx "1"-right->"n" Eventloop
+Eventloop "1"->"1" Thread
+Vertx "1"-down->"n" Verticle
+Verticle "1"-->"1" Eventloop
+
+
+@enduml

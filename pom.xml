@@ -101,8 +101,6 @@
 
 
 
-
-
         <!--<dependency>-->
             <!--<groupId>io.vertx</groupId>-->
             <!--<artifactId>vertx-micrometer-metrics</artifactId>-->

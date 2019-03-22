@@ -1,0 +1,17 @@
+@startuml
+
+HttpServer -> HttpServer : receive http request
+HttpServer -> Router:request
+Router -> Eventbus : send request
+Eventbus --> RestExecuteProxy:dispatch
+RestExecuteProxy -> RestExecuteProxy : check rate?
+RestExecuteProxy -> ArgsBuilder:parse request  with ParamMeta
+ArgsBuilder -> RestExecuteProxy: return args
+RestExecuteProxy -> AirForceVerticle:invoke
+AirForceVerticle --> RestExecuteProxy : return result
+RestExecuteProxy -> Serializer : serialize result with routemeta
+Serializer -> RestExecuteProxy : byte[]
+RestExecuteProxy -> HttpServer : write to http response
+
+
+@enduml

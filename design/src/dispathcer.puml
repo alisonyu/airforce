@@ -1,0 +1,11 @@
+@startuml
+
+AirForceVerticle -> Router: 初始化注册路由
+AirForceVerticle -> Eventbus : 订阅对应地址的事件
+HttpServer -> Router : 匹配路由处理器
+Router -> Eventbus : 发送事件
+Eventbus --> AirForceVerticle : 分派处理
+
+
+
+@enduml

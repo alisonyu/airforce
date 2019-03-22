@@ -1,0 +1,14 @@
+@startuml
+
+AirForceVerticle -> ServicePublisher: 解析 @ServiceProvider
+ServicePublisher -> ServiceMethodProxy: 生成执行代理类
+ServicePublisher -> Eventbus : 为每个服务方法生成address并订阅
+Eventbus --> Eventbus : 接收对应的Message
+Eventbus -> ServiceMethodProxy:处理Message
+ServiceMethodProxy -> ServiceMethodProxy:检查qps是否在阈值内
+ServiceMethodProxy -> AirForceVerticle : invoke
+AirForceVerticle --> ServiceMethodProxy: 返回结果或异常
+ServiceMethodProxy -> Eventbus : 序列化并回复调用结果
+
+
+@enduml

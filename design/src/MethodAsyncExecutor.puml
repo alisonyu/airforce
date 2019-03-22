@@ -1,0 +1,8 @@
+@startuml
+
+instance -> ReflectASM : 代码生成
+ReflectASM -> MethodAsyncExecutor : 封装
+MethodAsyncExecutor -> Flowable : invoke调用
+Flowable --> 下游 : 订阅
+
+@enduml

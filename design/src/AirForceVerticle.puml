@@ -1,0 +1,23 @@
+@startuml
+
+
+abstract class AbstractVerticle
+class AirForceVerticle
+class RestExecuteProxy
+class ServicePublisher{
+    void publish(Vertx vertx,AirForceVerticle service)
+}
+class DispatcherRouter{
+    void doMount(Class clazz,Eventbus eb)
+}
+
+
+AirForceVerticle <|-- AbstractVerticle
+AirForceVerticle -right-> ServicePublisher : publish service
+AirForceVerticle -left-> DispatcherRouter : mount rest route
+RestExecuteProxy --> AirForceVerticle : own
+
+
+
+
+@enduml

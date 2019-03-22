@@ -1,0 +1,29 @@
+@startuml
+
+
+class RouteMeta{
+    string path
+    httpMethod
+    pruduceType
+    handler
+}
+
+class ParamMeta{
+    string name
+    type
+    defaultValue
+    required
+}
+
+RouteMeta o-left- ParamMeta
+Method --> RouteMeta
+Method o-left-Param
+Param --> ParamMeta
+
+
+
+
+
+
+
+@enduml
